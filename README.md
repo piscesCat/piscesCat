@@ -1,4 +1,4 @@
-- 👋 Hi, I’m @piscesCat
+- 👋 Hi, I’m Khải Phan
 - 👀 I’m interested in: PHP, Python, Java
 - 🌱 I’m currently learning: Full-stack
 - 💞️ I’m looking to collaborate on: Github, Discord
