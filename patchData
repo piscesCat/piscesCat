@@ -1,9 +1,9 @@
 <data>
   <!-- Antiban -->
   <patch>
-    <path>/path/to/book1</path>
-    <offset>100</offset>
-    <byte>512</byte>
+    <path>Frameworks\/UnityFramework.framework\/UnityFramework</path>
+    <offset>0x579D980</offset>
+    <byte>E303271EC0035FD6</byte>
   </patch>
   <!-- Chức năng -->
 </data>
