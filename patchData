@@ -2,7 +2,7 @@
   <!-- Antiban -->
   <patch>
     <path>Frameworks\/UnityFramework.framework\/UnityFramework</path>
-    <offset>0x579D980</offset>
+    <offset>0x000</offset>
     <byte>E303271EC0035FD6</byte>
   </patch>
   <!-- Chức năng -->
