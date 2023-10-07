@@ -65,5 +65,11 @@
     <offset>0x5C28638</offset>
     <byte>20008052C0035FD6</byte>
   </patch>
-  <!-- Antiban -->
+
+  <!-- Active update message -->
+  <patch>
+    <path>Frameworks/UnityFramework.framework/UnityFramework</path>
+    <offset>0x0000</offset>
+    <byte>0000</byte>
+  </patch>
 </data>
