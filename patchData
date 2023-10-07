@@ -1,6 +1,4 @@
 <data>
-  <!-- Antiban -->
-
   <!-- Chức năng -->
   <patch>
     <path>Frameworks/UnityFramework.framework/UnityFramework</path>
@@ -67,4 +65,44 @@
     <offset>0x5C28638</offset>
     <byte>20008052C0035FD6</byte>
   </patch>
+  <!-- Antiban -->
+
+  <patch>
+    <path>Frameworks/UnityFramework.framework/UnityFramework</path>
+    <offset>0x5082948</offset>
+    <byte>C0035FD6</byte>
+  </patch>
+  <patch>
+    <path>Frameworks/UnityFramework.framework/UnityFramework</path>
+    <offset>0x508b090</offset>
+    <byte>C0035FD6</byte>
+  </patch>
+  <patch>
+    <path>Frameworks/UnityFramework.framework/UnityFramework</path>
+    <offset>0x5400ef0</offset>
+    <byte>C0035FD6</byte>
+  </patch>
+  <patch>
+    <path>Frameworks/UnityFramework.framework/UnityFramework</path>
+    <offset>0x5a26c68</offset>
+    <byte>C0035FD6</byte>
+  </patch>
+  <patch>
+    <path>Frameworks/UnityFramework.framework/UnityFramework</path>
+    <offset>0x85600d0</offset>
+    <byte>C0035FD6</byte>
+  </patch>
+  <patch>
+    <path>Frameworks/UnityFramework.framework/UnityFramework</path>
+    <offset>0x85602c0</offset>
+    <byte>C0035FD6</byte>
+  </patch>
+  <patch>
+    <path>Frameworks/UnityFramework.framework/UnityFramework</path>
+    <offset>0x8560328</offset>
+    <byte>C0035FD6</byte>
+  </patch>
+
+
+
 </data>
