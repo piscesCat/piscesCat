@@ -151,7 +151,7 @@
   <patch>
     <path>Frameworks/anogs.framework/anogs</path>
     <offset>0xa3610</offset>
-    <byte>C0035FD6</byte>
+    <byte>C0031FD6</byte>
   </patch>
   <patch>
     <path>Frameworks/anogs.framework/anogs</path>
