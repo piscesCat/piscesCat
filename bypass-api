@@ -7,6 +7,9 @@ var body = $response.body;
 var currentTime = new Date().getTime();
 
 function saveData(body) {
+  if (body.length < 80) {
+    return;
+  }
 	let expirationTime = currentTime + 30 * 1000;
 	let data = JSON.stringify({exp: expirationTime, body: body});
 	$persistentStore.write(data, key);
