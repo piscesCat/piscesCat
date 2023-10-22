@@ -1,0 +1,27 @@
+var key = "data_licence";
+
+var storedData = $persistentStore.read(key);
+
+var body = $response.body;
+
+var currentTime = new Date().getTime();
+
+function saveData(body) {
+	let expirationTime = currentTime + 30 * 1000;
+	let data = JSON.stringify({exp: expirationTime, body: body});
+	$persistentStore.write(data, key);
+}
+
+if(storedData === null) {
+	saveData(body);
+} else {
+	let data = JSON.parse(storedData);
+	let expirationTime = data.exp;
+	if(currentTime < expirationTime) {
+		var body = data.body;
+	} else {
+		saveData(body);
+	}
+}
+
+$done({body});
