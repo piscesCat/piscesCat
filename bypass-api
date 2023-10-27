@@ -15,7 +15,7 @@ function saveData(body) {
 	$persistentStore.write(data, key);
 }
 
-if(storedData === null) {
+if(storedData === null || typeof storedData === 'undefined') {
 	saveData(body);
 } else {
 	let data = JSON.parse(storedData);
@@ -27,4 +27,4 @@ if(storedData === null) {
 	}
 }
 
-$done({body});
+$done({body: body});
