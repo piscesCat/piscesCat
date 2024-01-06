@@ -2,7 +2,7 @@
 class keyApiClient {
     public $udid;
     public $keyExpireTime;
-    public $userName;
+    public $userDisplayName;
     public $deviceName;
     private $apiToken;
     private $secretKey;
@@ -17,10 +17,6 @@ class keyApiClient {
         return $this->udid;
     }
     
-    public function requestUdid() {
-        return '';
-    }
-    
     public setApiToken($token) {
         $this->apiToken = $token;
     }
@@ -31,6 +27,20 @@ class keyApiClient {
     
     public setPackageId($packageId) {
         $this->packageId = $packageId;
+    }
+    
+    public onSuccess($callback) {
+        if ($this->execute()) {
+            return $callback();
+        }
+    }
+    
+    private function execute() {
+        return true;
+    }
+    
+    private function requestUdid() {
+        $this->udid = 'UDID_test';
     }
     
     private generateCryptKey() {
