@@ -11,7 +11,7 @@ class keyApiClient {
     private $dataSigture;
     
     public function __construct() {
-        $this->dataCryptExpireTime = 15; // 15 seconds
+        $this->dataCryptExpireTime = time() + 15; // 15 seconds
         $this->execute();
     }
     
@@ -43,7 +43,7 @@ class keyApiClient {
     }
     
     private function genDataSigure() {
-        return md5($this->getVendorIdentifier());
+        return md5($this->getVendorIdentifier() . $this->dataCryptExpireTime);
     }
     
     private function execute() {
@@ -55,8 +55,7 @@ class keyApiClient {
     }
     
     private generateCryptKey() {
-        $expireTime = time() + $this->dataCryptExpireTime;
-        return md5($this->secretKey . $expireTime);
+        return md5($this->secretKey . $this->dataCryptExpireTime);
     }
     
     private function strEncrypt($plainText) {
