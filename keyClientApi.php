@@ -17,22 +17,27 @@ class keyApiClient {
         return $this->udid;
     }
     
-    public setApiToken($token) {
+    public function setApiToken($token) {
         $this->apiToken = $token;
     }
     
-    public setSecretKey($secretKey) {
+    public function setSecretKey($secretKey) {
         $this->secretKey = $secretKey;
     }
     
-    public setPackageId($packageId) {
+    public function setPackageId($packageId) {
         $this->packageId = $packageId;
     }
     
-    public onSuccess($callback) {
+    public function onSuccess($callback) {
         if ($this->execute()) {
             return $callback();
         }
+    }
+    
+    private function getVendorIdentifier() {
+        //NSString *vendorID = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
+        return 'test';
     }
     
     private function execute() {
