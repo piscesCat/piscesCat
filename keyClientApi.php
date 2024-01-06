@@ -54,8 +54,11 @@ class keyApiClient {
         $this->udid = 'UDID_test';
     }
     
-    private generateCryptKey() {
-        return md5($this->secretKey . $this->dataCryptExpireTime);
+    private generateCryptKey($expireTime = null) {
+        if ($expireTime === null) {
+            $expireTime = $this->dataCryptExpireTime;
+        }
+        return md5($this->secretKey . $expireTime);
     }
     
     private function strEncrypt($plainText) {
@@ -72,8 +75,8 @@ class keyApiClient {
   return $encryptedString;
 }
 
-private function strDecrypt($encryptedText) {
-    $key = $this->generateCryptKey();
+private function strDecrypt($encryptedText, $expireTime) {
+    $key = $this->generateCryptKey($expireTime);
   $encryptedBytes = array_map('ord', str_split(base64_decode($encryptedText)));
   $keyBytes = utf8_encode($key);
   $decryptedBytes = array();
