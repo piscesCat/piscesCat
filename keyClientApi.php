@@ -11,6 +11,7 @@ class keyApiClient {
     
     public function __construct() {
         $this->dataCryptExpireTime = 15; // 15 seconds
+        $this->execute();
     }
     
     public function getUdid() {
@@ -30,9 +31,7 @@ class keyApiClient {
     }
     
     public function onSuccess($callback) {
-        if ($this->execute()) {
-            return $callback();
-        }
+        return $callback;
     }
     
     private function getVendorIdentifier() {
