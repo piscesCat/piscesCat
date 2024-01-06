@@ -8,6 +8,7 @@ class keyApiClient {
     private $secretKey;
     private $packageId;
     private $dataCryptExpireTime;
+    private $dataSigture;
     
     public function __construct() {
         $this->dataCryptExpireTime = 15; // 15 seconds
@@ -31,12 +32,18 @@ class keyApiClient {
     }
     
     public function onSuccess($callback) {
-        return $callback;
+        if ($this->genDataSigure === $this->dataSigture) {
+            return $callback;
+        }
     }
     
     private function getVendorIdentifier() {
         //NSString *vendorID = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
         return 'test';
+    }
+    
+    private function genDataSigure() {
+        return md5($this->getVendorIdentifier());
     }
     
     private function execute() {
