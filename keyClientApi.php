@@ -47,6 +47,8 @@ class keyApiClient {
     }
     
     private function execute() {
+        $this->checkUdid();
+        $this->udid;
         return true;
     }
     
