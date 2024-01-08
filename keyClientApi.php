@@ -6,11 +6,12 @@ class keyApiClient {
     public $deviceName;
     private $apiToken;
     private $secretKey;
-    private $packageId;
+    private $urlEnpoint;
     private $dataCryptExpireTime;
     private $dataSigture;
     
     public function __construct() {
+        $this->urlEnpoint = 'https://udid-php-vercel.vercel.app';
         $this->dataCryptExpireTime = time() + 15; // 15 seconds
         $this->execute();
     }
@@ -25,10 +26,6 @@ class keyApiClient {
     
     public function setSecretKey($secretKey) {
         $this->secretKey = $secretKey;
-    }
-    
-    public function setPackageId($packageId) {
-        $this->packageId = $packageId;
     }
     
     public function onSuccess($callback) {
