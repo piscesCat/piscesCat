@@ -6,12 +6,11 @@ class keyApiClient {
     public $deviceName;
     private $apiToken;
     private $secretKey;
-    private $urlEnpoint;
+    private $apiBaseUrl;
     private $dataCryptExpireTime;
-    private $dataSigture;
     
     public function __construct() {
-        $this->urlEnpoint = 'https://udid-php-vercel.vercel.app';
+        $this->apiBaseUrl = 'https://udid-php-vercel.vercel.app';
         $this->dataCryptExpireTime = time() + 15; // 15 seconds
         $this->execute();
     }
@@ -29,9 +28,7 @@ class keyApiClient {
     }
     
     public function onSuccess($callback) {
-        if ($this->genDataSigure === $this->dataSigture) {
-            return $callback;
-        }
+        
     }
     
     private function getVendorIdentifier() {
@@ -39,14 +36,22 @@ class keyApiClient {
         return 'test';
     }
     
-    private function genDataSigure() {
-        return md5($this->getVendorIdentifier() . $this->dataCryptExpireTime);
+    private function execute() {
+        $this->checkUdid(function () {
+            $this->udid;
+        });
     }
     
-    private function execute() {
-        $this->checkUdid();
-        $this->udid;
-        return true;
+    private function checkUdid($callback) {
+        $apiData = this->apiRequest('/check_udid', [
+            'device_vendor_id' => $this->getVendorIdentifier(),
+        ]);
+        
+        if ($apiData->status === 'success') {
+            return $callback();
+        } else {
+            return $this->requestUdid();
+        }
     }
     
     private function requestUdid() {
@@ -60,9 +65,9 @@ class keyApiClient {
         return md5($this->secretKey . $expireTime);
     }
     
-    private function strEncrypt($plainText) {
+    private function strEncrypt($arrayData) {
         $key = $this->generateCryptKey();
-  $plainTextBytes = utf8_encode($plainText);
+  $plainTextBytes = utf8_encode(json_encode($arrayData));
   $keyBytes = utf8_encode($key);
   $encryptedBytes = array();
 
@@ -71,11 +76,19 @@ class keyApiClient {
   }
 
   $encryptedString = base64_encode(implode(array_map('chr', $encryptedBytes)));
-  return $encryptedString;
+    return array (
+        'data' => $encryptedString,
+        'expires_time' => $this->dataCryptExpireTime,
+    );
 }
 
-private function strDecrypt($encryptedText, $expireTime) {
-    $key = $this->generateCryptKey($expireTime);
+private function strDecrypt($jsonEncoded) {
+    $jsonDecoded = json_decode($jsonEncoded);
+    if (!isset($jsonDecoded->data) || !isset($jsonDecoded->expires_time)) {
+        return false;
+    }
+    $key = $this->generateCryptKey($jsonDecoded->expires_time);
+    $encryptedText = $jsonDecoded->data;
   $encryptedBytes = array_map('ord', str_split(base64_decode($encryptedText)));
   $keyBytes = utf8_encode($key);
   $decryptedBytes = array();
@@ -83,11 +96,29 @@ private function strDecrypt($encryptedText, $expireTime) {
   for ($i = 0; $i < count($encryptedBytes); $i++) {
     $decryptedBytes[] = chr($encryptedBytes[$i] ^ ord($keyBytes[$i % strlen($keyBytes)]));
   }
-
-  $decryptedText = implode($decryptedBytes);
-  return $decryptedText;
+      return json_decode(implode($decryptedBytes));
 }
-    private apiRequest($url, $requestData) {
-    
+    private apiRequest($apiPath, $postData = array()) {
+        if (empty($this->apiToken)) {
+            return 'Bắt buộc set API Token';
+        }
+        $curl = curl_init($this->apiBaseUrl . $apiPath);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $this->apiToken,
+            'Content-Type: application/json'
+        ]);
+        if (!empty($postData)) {
+            $encryptedPostData = strEncrypt($postData);
+            curl_setopt($curl, CURLOPT_POST, true);
+            curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($jsonData));
+        }
+        $response = curl_exec($curl);
+        if (curl_errno($curl) || !($dataDecrypted === strDecrypt($response)) {
+            return 'Xảy ra sự cố với máy chủ!';
+        }
+        curl_close($curl);
+        
+        return $dataDecrypted;
     }
 }
