@@ -96,7 +96,9 @@ private function strDecrypt($jsonEncoded) {
   for ($i = 0; $i < count($encryptedBytes); $i++) {
     $decryptedBytes[] = chr($encryptedBytes[$i] ^ ord($keyBytes[$i % strlen($keyBytes)]));
   }
-      return json_decode(implode($decryptedBytes));
+      if (null !== ($decryptedData = json_decode(implode($decryptedBytes))) {
+            return $decryptedData;
+        }
 }
     private apiRequest($apiPath, $postData = array()) {
         if (empty($this->apiToken)) {
