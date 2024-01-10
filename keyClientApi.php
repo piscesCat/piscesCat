@@ -68,6 +68,9 @@ class keyApiClient {
 
     private function strEncrypt($arrayData)
     {
+        if (!is_array($arrayData)) {
+            return null;
+        }
         $key = $this->generateCryptKey();
         $plainTextBytes = $this->utf8Encode(json_encode($arrayData));
         $keyBytes = $this->utf8Encode($key);
@@ -88,7 +91,7 @@ class keyApiClient {
     {
         $jsonDecoded = json_decode($jsonEncoded);
         if (!isset($jsonDecoded->data) || !isset($jsonDecoded->expires_time)) {
-            return false;
+            return null;
         }
         $key = $this->generateCryptKey($jsonDecoded->expires_time);
         $encryptedText = $jsonDecoded->data;
