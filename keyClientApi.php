@@ -58,48 +58,58 @@ class keyApiClient {
         $this->udid = 'UDID_test';
     }
     
-    private generateCryptKey($expireTime = null) {
+    private function generateCryptKey($expireTime = null)
+    {
         if ($expireTime === null) {
             $expireTime = $this->dataCryptExpireTime;
         }
         return md5($this->secretKey . $expireTime);
     }
-    
-    private function strEncrypt($arrayData) {
+
+    private function strEncrypt($arrayData)
+    {
         $key = $this->generateCryptKey();
-  $plainTextBytes = utf8_encode(json_encode($arrayData));
-  $keyBytes = utf8_encode($key);
-  $encryptedBytes = array();
+        $plainTextBytes = $this->utf8Encode(json_encode($arrayData));
+        $keyBytes = $this->utf8Encode($key);
+        $encryptedBytes = array();
 
-  for ($i = 0; $i < strlen($plainTextBytes); $i++) {
-    $encryptedBytes[] = ord($plainTextBytes[$i]) ^ ord($keyBytes[$i % strlen($keyBytes)]);
-  }
+        for ($i = 0; $i < strlen($plainTextBytes); $i++) {
+            $encryptedBytes[] = ord($plainTextBytes[$i]) ^ ord($keyBytes[$i % strlen($keyBytes)]);
+        }
 
-  $encryptedString = base64_encode(implode(array_map('chr', $encryptedBytes)));
-    return array (
-        'data' => $encryptedString,
-        'expires_time' => $this->dataCryptExpireTime,
-    );
-}
-
-private function strDecrypt($jsonEncoded) {
-    $jsonDecoded = json_decode($jsonEncoded);
-    if (!isset($jsonDecoded->data) || !isset($jsonDecoded->expires_time)) {
-        return false;
+        $encryptedString = base64_encode(implode(array_map('chr', $encryptedBytes)));
+        return array(
+            'data' => $encryptedString,
+            'expires_time' => $this->dataCryptExpireTime,
+        );
     }
-    $key = $this->generateCryptKey($jsonDecoded->expires_time);
-    $encryptedText = $jsonDecoded->data;
-  $encryptedBytes = array_map('ord', str_split(base64_decode($encryptedText)));
-  $keyBytes = utf8_encode($key);
-  $decryptedBytes = array();
 
-  for ($i = 0; $i < count($encryptedBytes); $i++) {
-    $decryptedBytes[] = chr($encryptedBytes[$i] ^ ord($keyBytes[$i % strlen($keyBytes)]));
-  }
-      if (null !== ($decryptedData = json_decode(implode($decryptedBytes))) {
+    private function strDecrypt($jsonEncoded)
+    {
+        $jsonDecoded = json_decode($jsonEncoded);
+        if (!isset($jsonDecoded->data) || !isset($jsonDecoded->expires_time)) {
+            return false;
+        }
+        $key = $this->generateCryptKey($jsonDecoded->expires_time);
+        $encryptedText = $jsonDecoded->data;
+        $encryptedBytes = array_map('ord', str_split(base64_decode($encryptedText)));
+        $keyBytes = $this->utf8Encode($key);
+        $decryptedBytes = array();
+
+        for ($i = 0; $i < count($encryptedBytes); $i++) {
+            $decryptedBytes[] = chr($encryptedBytes[$i] ^ ord($keyBytes[$i % strlen($keyBytes)]));
+        }
+
+        if (null !== ($decryptedData = json_decode(implode($decryptedBytes)))) {
             return $decryptedData;
         }
-}
+    }
+
+    private function utf8Encode($string)
+    {
+        return mb_convert_encoding($string, 'UTF-8', mb_detect_encoding($string, 'UTF-8, ISO-8859-1', true));
+    }
+    
     private apiRequest($apiPath, $postData = array()) {
         if (empty($this->apiToken)) {
             return 'Bắt buộc set API Token';
