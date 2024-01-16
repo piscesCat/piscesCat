@@ -59,7 +59,7 @@
         self.udid = apiData[@"udid"];
         callback();
     } else {
-        // Hiện ô hỏi lấy UDID ở đây nếu đúng chạy dòng code dưới
+        // Hiện ô hỏi lấy UDID ở đây nếu đồng ý chạy dòng code dưới
         [self requestUdid];
     }
 }
