@@ -59,6 +59,7 @@
         self.udid = apiData[@"udid"];
         callback();
     } else {
+        // Hiện ô hỏi lấy UDID ở đây nếu đúng chạy dòng code dưới
         [self requestUdid];
     }
 }
@@ -67,21 +68,16 @@
     NSDictionary *apiData = [self apiRequest:@"/request_udid" postData:@{@"device_vendor_id": [self getVendorIdentifier]}];
 
     if ([apiData[@"status"] isEqualToString:@"success"]) {
-        // Mở ở trình duyệt
         NSString *mobileConfigURLString = apiData[@"mobile_config_url"];
         NSURL *mobileConfigURL = [NSURL URLWithString:mobileConfigURLString];
 
-        if (mobileConfigURL) {
-            if ([[UIApplication sharedApplication] canOpenURL:mobileConfigURL]) {
-                [[UIApplication sharedApplication] openURL:mobileConfigURL options:@{} completionHandler:nil];
-            } else {
-                NSLog(@"Could not open URL in Safari. URL is not supported.");
-            }
+        if ([[UIApplication sharedApplication] canOpenURL:mobileConfigURL]) {
+            [[UIApplication sharedApplication] openURL:mobileConfigURL options:@{} completionHandler:nil];
         } else {
-            NSLog(@"Invalid URL");
+            NSLog(@"Không thể mở URL mobile config.");
         }
     } else {
-        NSLog(@"API request failed with status: %@", apiData[@"status"]);
+        NSLog(@"API status: %@", apiData[@"status"]);
     }
 }
 
@@ -187,14 +183,13 @@
         if (error == nil) {
             NSDictionary *arrayResp = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
             NSDictionary *dataDecrypted = [self dataDecrypt:arrayResp[@"data"] expiresTime:[arrayResp[@"expires_time"] doubleValue]];
-            // Handle decrypted data as needed
         } else {
             NSLog(@"Error: %@", error.localizedDescription);
         }
     }];
     
     [task resume];
-    return nil; // Adjust return type as needed
+    return nil;
 }
 
 @end
