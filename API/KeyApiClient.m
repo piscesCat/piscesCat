@@ -134,14 +134,6 @@
     return decryptedData ?: decryptedString;
 }
 
-- (NSString *)jsonDecode:(NSString *)jsonString {
-    NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
-    NSError *jsonError;
-    id decodedData = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:&jsonError];
-
-    return jsonError ? nil : decodedData;
-}
-
 - (NSData *)utf8Encode:(NSString *)string {
     return [string dataUsingEncoding:NSUTF8StringEncoding];
 }
@@ -168,6 +160,14 @@
     } else {
         return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
     }
+}
+
+- (NSString *)jsonDecode:(NSString *)jsonString {
+    NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *jsonError;
+    id decodedData = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:&jsonError];
+
+    return jsonError ? nil : decodedData;
 }
 
 - (NSDictionary *)apiRequest:(NSString *)apiPath postData:(NSDictionary *)postData {
