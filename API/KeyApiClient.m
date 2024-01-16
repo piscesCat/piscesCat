@@ -16,6 +16,8 @@
 - (NSData *)dataEncrypt:(NSDictionary *)data;
 - (NSDictionary *)dataDecrypt:(NSString *)encryptedData expiresTime:(NSTimeInterval)expiresTime;
 - (NSString *)utf8Encode:(NSString *)string;
+- (NSString *)jsonDecode:(NSString *)jsonString;
+- (NSString *)jsonEncode:(id)data;
 - (NSDictionary *)apiRequest:(NSString *)apiPath postData:(NSDictionary *)postData;
 
 @end
