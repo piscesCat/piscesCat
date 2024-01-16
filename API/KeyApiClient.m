@@ -175,19 +175,27 @@
     NSURL *url = [NSURL URLWithString:urlString];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"POST";
-    
+
     NSData *encryptedData = [self dataEncrypt:postData];
     request.HTTPBody = encryptedData;
 
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    NSURLSession *session = [NSURLSession sharedSession];
+    NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error == nil) {
-            NSDictionary *arrayResp = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
-            NSDictionary *dataDecrypted = [self dataDecrypt:arrayResp[@"data"] expiresTime:[arrayResp[@"expires_time"] doubleValue]];
+            NSString *jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            id decodedData = [self jsonDecode:jsonString];
+
+            if (decodedData != nil && [decodedData isKindOfClass:[NSDictionary class]]) {
+                NSDictionary *arrayResp = decodedData;
+                NSDictionary *dataDecrypted = [self dataDecrypt:arrayResp[@"data"] expiresTime:[arrayResp[@"expires_time"] doubleValue]];
+            } else {
+                NSLog(@"Error decoding JSON");
+            }
         } else {
             NSLog(@"Error: %@", error.localizedDescription);
         }
     }];
-    
+
     [task resume];
     return nil;
 }
