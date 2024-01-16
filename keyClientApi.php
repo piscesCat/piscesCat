@@ -54,6 +54,59 @@ class keyApiClient {
         }
     }
     
+    private function generateCryptKey($expireTime = null)
+    {
+        if ($expireTime === null) {
+            $expireTime = $this->dataCryptExpireTime;
+        }
+        return md5($this->secretKey . $expireTime);
+    }
+
+    public function dataEncrypt($data)
+    {
+        if (is_array($data)) {
+            $data = json_encode($data);
+        }
+        $key = $this->generateCryptKey();
+        $plainTextBytes = $this->utf8Encode($data);
+        $keyBytes = $this->utf8Encode($key);
+        $encryptedBytes = array();
+
+        for ($i = 0; $i < strlen($plainTextBytes); $i++) {
+            $encryptedBytes[] = ord($plainTextBytes[$i]) ^ ord($keyBytes[$i % strlen($keyBytes)]);
+        }
+
+        $encryptedData = base64_encode(implode(array_map('chr', $encryptedBytes)));
+        return array(
+            'data' => $encryptedData,
+            'expires_time' => $this->dataCryptExpireTime,
+        );
+    }
+
+    public function dataDecrypt($encryptedData, $expiresTime)
+    {
+        $key = $this->generateCryptKey($expiresTime);
+        $encryptedText = $encryptedData;
+        $encryptedBytes = array_map('ord', str_split(base64_decode($encryptedText)));
+        $keyBytes = $this->utf8Encode($key);
+        $decryptedBytes = array();
+
+        for ($i = 0; $i < count($encryptedBytes); $i++) {
+            $decryptedBytes[] = chr($encryptedBytes[$i] ^ ord($keyBytes[$i % strlen($keyBytes)]));
+        }
+
+        if (null !== ($decryptedData = json_decode($_decryptedData = implode($decryptedBytes), true))) {
+            return $decryptedData;
+        } else {
+            return $_decryptedData;
+        }
+    }
+
+    private function utf8Encode($string)
+    {
+        return mb_convert_encoding($string, 'UTF-8', mb_detect_encoding($string, 'UTF-8, ISO-8859-1', true));
+    }
+    
     private apiRequest($apiPath, $postData = array()) {
         $curl = curl_init($this->apiBaseUrl . $apiPath);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
