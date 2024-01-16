@@ -1,4 +1,5 @@
 #import "KeyApiClient.h"
+#import <CommonCrypto/CommonDigest.h>
 
 @interface KeyApiClient ()
 
@@ -84,50 +85,93 @@
     }
 }
 
-- (NSString *)generateCryptKey:(NSTimeInterval)expireTime {
-    if (expireTime == 0) {
-        expireTime = self.dataCryptExpireTime;
+- (NSString *)generateCryptKey:(NSNumber *)expireTime {
+    if (expireTime == nil) {
+        expireTime = [NSNumber numberWithInteger:self.dataCryptExpireTime];
     }
-    return [self md5:[NSString stringWithFormat:@"%@%.0f", self.secretKey, expireTime]];
+    NSString *key = [self md5:[NSString stringWithFormat:@"%@%@", self.secretKey, expireTime]];
+    return key;
 }
 
-- (NSDictionary *)dataEncrypt:(id)data {
-    if ([data isKindOfClass:[NSArray class]]) {
+- (NSString *)dataEncrypt:(id)data {
+    if ([data isKindOfClass:[NSArray class]] || [data isKindOfClass:[NSDictionary class]]) {
         data = [self jsonEncode:data];
     }
     
-    NSString *key = [self generateCryptKey:0];
-    NSString *plainTextBytes = [self utf8Encode:data];
-    NSString *keyBytes = [self utf8Encode:key];
+    NSString *key = [self generateCryptKey:nil];
+    NSData *plainTextBytes = [self utf8Encode:data];
+    NSData *keyBytes = [self utf8Encode:key];
     NSMutableData *encryptedBytes = [NSMutableData data];
 
     for (int i = 0; i < plainTextBytes.length; i++) {
-        char encryptedChar = [plainTextBytes characterAtIndex:i] ^ [keyBytes characterAtIndex:i % keyBytes.length];
+        char plainChar, keyChar;
+        [plainTextBytes getBytes:&plainChar range:NSMakeRange(i, 1)];
+        [keyBytes getBytes:&keyChar range:NSMakeRange(i % keyBytes.length, 1)];
+
+        char encryptedChar = plainChar ^ keyChar;
         [encryptedBytes appendBytes:&encryptedChar length:1];
     }
 
-    NSString *encryptedData = [self base64Encode:encryptedBytes];
-    return @{@"data": encryptedData, @"expires_time": @(self.dataCryptExpireTime)};
+    NSString *encryptedData = [encryptedBytes base64EncodedStringWithOptions:0];
+    return @{@"data": encryptedData, @"expires_time": [NSNumber numberWithInteger:self.dataCryptExpireTime]};
 }
 
-- (id)dataDecrypt:(NSString *)encryptedData expiresTime:(NSTimeInterval)expiresTime {
+- (id)dataDecrypt:(NSString *)encryptedData expireTime:(NSNumber *)expiresTime {
     NSString *key = [self generateCryptKey:expiresTime];
-    NSData *encryptedBytes = [self base64Decode:encryptedData];
-    NSString *keyBytes = [self utf8Encode:key];
-    NSMutableData *decryptedBytes = [NSMutableData dataWithCapacity:encryptedBytes.length];
+    NSData *encryptedText = [[NSData alloc] initWithBase64EncodedString:encryptedData options:0];
+    NSData *encryptedBytes = [encryptedText bytes];
+    NSData *keyBytes = [self utf8Encode:key];
+    NSMutableData *decryptedBytes = [NSMutableData data];
 
     for (int i = 0; i < encryptedBytes.length; i++) {
-        char decryptedChar = ((char *)encryptedBytes.bytes)[i] ^ [keyBytes characterAtIndex:i % keyBytes.length];
+        char encryptedChar, keyChar;
+        [encryptedBytes getBytes:&encryptedChar range:NSMakeRange(i, 1)];
+        [keyBytes getBytes:&keyChar range:NSMakeRange(i % keyBytes.length, 1)];
+
+        char decryptedChar = encryptedChar ^ keyChar;
         [decryptedBytes appendBytes:&decryptedChar length:1];
     }
 
-    NSError *error;
-    id decryptedData = [NSJSONSerialization JSONObjectWithData:decryptedBytes options:kNilOptions error:&error];
-    return error ? encryptedData : decryptedData;
+    NSString *decryptedString = [[NSString alloc] initWithData:decryptedBytes encoding:NSUTF8StringEncoding];
+    id decryptedData = [self jsonDecode:decryptedString];
+
+    return decryptedData ?: decryptedString;
 }
 
-- (NSString *)utf8Encode:(NSString *)string {
-    return [string stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLHostAllowedCharacterSet]];
+- (NSString *)jsonDecode:(NSString *)jsonString {
+    NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *jsonError;
+    id decodedData = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:&jsonError];
+
+    return jsonError ? nil : decodedData;
+}
+
+- (NSData *)utf8Encode:(NSString *)string {
+    return [string dataUsingEncoding:NSUTF8StringEncoding];
+}
+
+- (NSString *)md5:(NSString *)input {
+    const char *cStr = [input UTF8String];
+    unsigned char digest[CC_MD5_DIGEST_LENGTH];
+    CC_MD5(cStr, (CC_LONG)strlen(cStr), digest);
+
+    NSMutableString *output = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
+    for (int i = 0; i < CC_MD5_DIGEST_LENGTH; i++) {
+        [output appendFormat:@"%02x", digest[i]];
+    }
+
+    return output;
+}
+
+- (NSString *)jsonEncode:(id)data {
+    NSError *jsonError;
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:data options:0 error:&jsonError];
+
+    if (jsonError) {
+        return nil;
+    } else {
+        return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    }
 }
 
 - (NSDictionary *)apiRequest:(NSString *)apiPath postData:(NSDictionary *)postData {
