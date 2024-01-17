@@ -16,6 +16,7 @@
 - (NSData *)dataEncrypt:(NSDictionary *)data;
 - (NSDictionary *)dataDecrypt:(NSString *)encryptedData expiresTime:(NSTimeInterval)expiresTime;
 - (NSString *)utf8Encode:(NSString *)string;
+- (NSData *)utf8Decode:(NSData *)data;
 - (NSString *)jsonDecode:(NSString *)jsonString;
 - (NSString *)jsonEncode:(id)data;
 - (NSDictionary *)apiRequest:(NSString *)apiPath postData:(NSDictionary *)postData;
@@ -173,12 +174,6 @@
 }
 
 - (NSString *)utf8Encode:(NSString *)string {
-    return [string dataUsingEncoding:NSUTF8StringEncoding];
-}
-
-viết hàm utf8 decode và thay phần code trực tiếp utf8 encode ở hàm apiRequest
-
-- (NSData *)utf8Encode:(NSString *)string {
     return [string dataUsingEncoding:NSUTF8StringEncoding];
 }
 
