@@ -221,7 +221,7 @@
     NSURLSession *session = [NSURLSession sharedSession];
     NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error == nil) {
-            NSString *jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            NSString *jsonString = [self utf8Decode:data];
             id decodedData = [self jsonDecode:jsonString];
 
             if (decodedData != nil && [decodedData isKindOfClass:[NSDictionary class]]) {
