@@ -136,6 +136,48 @@
     return decryptedData ?: decryptedString;
 }
 
+- (NSString *)md5:(NSString *)input {
+    const char *cStr = [input UTF8String];
+    unsigned char digest[CC_MD5_DIGEST_LENGTH];
+    CC_MD5(cStr, (CC_LONG)strlen(cStr), digest);
+
+    NSMutableString *output = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
+    for (int i = 0; i < CC_MD5_DIGEST_LENGTH; i++) {
+        [output appendFormat:@"%02x", digest[i]];
+    }
+
+    return output;
+}
+
+- (NSString *)jsonEncode:(id)data {
+    NSError *jsonError;
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:data options:0 error:&jsonError];
+
+    if (jsonError) {
+        return nil;
+    } else {
+        return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    }
+}
+
+- (NSString *)jsonDecode:(NSString *)jsonString {
+    NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *jsonError;
+    id decodedData = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:&jsonError];
+
+    return jsonError ? nil : decodedData;
+}
+
+- (NSData *)utf8Decode:(NSData *)data {
+    return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+}
+
+- (NSString *)utf8Encode:(NSString *)string {
+    return [string dataUsingEncoding:NSUTF8StringEncoding];
+}
+
+viết hàm utf8 decode và thay phần code trực tiếp utf8 encode ở hàm apiRequest
+
 - (NSData *)utf8Encode:(NSString *)string {
     return [string dataUsingEncoding:NSUTF8StringEncoding];
 }
