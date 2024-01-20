@@ -1,9 +1,6 @@
-#import "KeyApiClient.h"
+KeyAPIClient *client = [[KeyAPIClient alloc] init];
+client.apiBase = @"https://api.example.com";
+client.accessToken = @"your-access-token";
 
-void function(){
-    KeyApiClient *API = [[KeyApiClient alloc] init];
-    [API setSecretKey:@"test123"];
-    [API onSuccess:^{
-        NSLog(@"APIData - UDID: %@", [API getUdid]);
-   }];
-}
+[client onSuccess:^{
+    // Do something when checkKey() returns success
