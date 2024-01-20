@@ -1,12 +1,29 @@
 #import <Foundation/Foundation.h>
 
-@interface APIClient : NSObject
+typedef NS_ENUM(NSInteger, APIClientStatus) {
+  APIClientStatusSuccess,
+  APIClientStatusFail,
+};
 
-@property (nonatomic, strong) NSString *apiBase;
-@property (nonatomic, strong) NSString *accessToken;
+@interface KeyApiClient : NSObject
 
-- (void)setApiAccessToken:(NSString *)accessToken;
+@property (nonatomic, strong, readonly) NSString *apiBase;
+@property (nonatomic, strong, readonly) NSString *apiAccessToken;
+
++ (APIClient *)sharedClient;
+
+- (void)setApiAccessToken:(NSString *)apiAccessToken;
+
+- (APIClientStatus)apiRequest:(NSDictionary *)params;
+
+- (APIClientStatus)checkUdid;
+
+- (APIClientStatus)requestUdid;
+
+- (APIClientStatus)checkKey:(NSString *)key value:(NSString *)value;
 
 - (void)onSuccess:(void (^)(void))onsuccess;
+
+- (void)execute;
 
 @end
