@@ -2,15 +2,27 @@
 
 @interface KeyAPIClient : NSObject
 
-@property (nonatomic, strong) NSString *apiBase;
-@property (nonatomic, strong) NSString *accessToken;
+@property (nonatomic, strong, readonly) NSString *apiBase;
+@property (nonatomic, strong, readonly) NSString *accessToken;
+
++ (instancetype)sharedClient;
 
 - (void)setAccessToken:(NSString *)accessToken;
 
-- (KeyAPIClientResponseCode)apiRequest:(NSString *)apiPath params:(NSDictionary *)params;
+- (void)apiRequestWithPath:(NSString *)apiPath
+                 params:(NSDictionary *)params
+               completion:(void (^)(id response, NSError *error))completion;
 
-- (void)onSuccess:(void (^)(void))completeBlock;
+- (void)onSuccess:(void (^)(void))completion;
 
-- (void)execute;
+- (enum KeyAPIClientStatus)checkUdid;
+- (enum KeyAPIClientStatus)requestUdid;
+- (enum KeyAPIClientStatus)checkKey:(NSString *)key;
+- (enum KeyAPIClientStatus)execute;
+
+typedef NS_ENUM(NSUInteger, KeyAPIClientStatus) {
+    KeyAPIClientStatusSuccess,
+    KeyAPIClientStatusFail,
+};
 
 @end
