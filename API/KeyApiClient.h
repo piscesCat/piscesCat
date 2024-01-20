@@ -1,14 +1,12 @@
 #import <Foundation/Foundation.h>
-#import <UIKit/UIKit.h>
-#import <Metal/Metal.h>
 
-NS_ASSUME_NONNULL_BEGIN
+@interface APIClient : NSObject
 
-@interface KeyApiClient : NSObject
-- (void) onSuccess:(void (^)(void))callback;
-- (void) setSecretKey:(NSString*)secretKey;
-- (NSString*) getUDID;
+@property (nonatomic, strong) NSString *apiBase;
+@property (nonatomic, strong) NSString *accessToken;
+
+- (void)setApiAccessToken:(NSString *)accessToken;
+
+- (void)onSuccess:(void (^)(void))onsuccess;
 
 @end
-
-NS_ASSUME_NONNULL_END
