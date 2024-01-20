@@ -1,28 +1,26 @@
 #import <Foundation/Foundation.h>
 
-typedef NS_ENUM(NSInteger, APIClientStatus) {
-  APIClientStatusSuccess,
-  APIClientStatusFail,
+typedef NS_ENUM(NSInteger, KeyAPIClientResponseCode) {
+    KeyAPIClientResponseCodeSuccess = 0,
+    KeyAPIClientResponseCodeFail = 1,
 };
 
-@interface KeyApiClient : NSObject
+@interface KeyAPIClient : NSObject
 
-@property (nonatomic, strong, readonly) NSString *apiBase;
-@property (nonatomic, strong, readonly) NSString *apiAccessToken;
+@property (nonatomic, strong) NSString *apiBase;
+@property (nonatomic, strong) NSString *accessToken;
 
-+ (APIClient *)sharedClient;
+- (void)setAccessToken:(NSString *)accessToken;
 
-- (void)setApiAccessToken:(NSString *)apiAccessToken;
+- (KeyAPIClientResponseCode)apiRequest:(NSString *)apiPath params:(NSDictionary *)params;
 
-- (APIClientStatus)apiRequest:(NSDictionary *)params;
+- (KeyAPIClientResponseCode)checkUdid;
 
-- (APIClientStatus)checkUdid;
+- (KeyAPIClientResponseCode)requestUdid;
 
-- (APIClientStatus)requestUdid;
+- (KeyAPIClientResponseCode)checkKey:(NSString *)key;
 
-- (APIClientStatus)checkKey:(NSString *)key value:(NSString *)value;
-
-- (void)onSuccess:(void (^)(void))onsuccess;
+- (void)onSuccess:(void (^)(void))completeBlock;
 
 - (void)execute;
 
