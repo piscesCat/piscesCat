@@ -6,7 +6,7 @@
 @synthesize accessToken;
 
 - (void)setAccessToken:(NSString *)accessToken {
-    self.accessToken = accessToken;
+    _accessToken = accessToken;
 }
 
 - (KeyAPIClientResponseCode)apiRequest:(NSString *)apiPath params:(NSDictionary *)params {
@@ -38,16 +38,28 @@
     }
 }
 
+- (void)onSuccess:(void (^)(void))completeBlock {
+    _onSuccessBlock = completeBlock;
+}
+
+- (void)execute {
+    [self checkUdid];
+}
+
+#pragma mark - Private Methods
+
 - (KeyAPIClientResponseCode)checkUdid {
     NSDictionary *params = @{@"device_test" : @"test"};
 
     KeyAPIClientResponseCode code = [self apiRequest:@"/check_udid" params:params];
 
     if (code == KeyAPIClientResponseCodeSuccess) {
-        return code;
+        // Do something when checkUdid() returns success
     } else {
-        return [self requestUdid];
+        code = [self requestUdid];
     }
+
+    return code;
 }
 
 - (KeyAPIClientResponseCode)requestUdid {
@@ -58,10 +70,9 @@
     if (code == KeyAPIClientResponseCodeSuccess) {
         NSString *mobile_config_url = json[@"mobile_config_url"];
         [[UIApplication sharedApplication] openURL:[NSURL URLWithString:mobile_config_url]];
-        return code;
-    } else {
-        return code;
     }
+
+    return code;
 }
 
 - (KeyAPIClientResponseCode)checkKey:(NSString *)key {
@@ -70,18 +81,10 @@
     KeyAPIClientResponseCode code = [self apiRequest:@"/check_key" params:params];
 
     if (code == KeyAPIClientResponseCodeSuccess) {
-        return code;
-    } else {
-        return code;
+        // Do something when checkKey() returns success
     }
-}
 
-- (void)onSuccess:(void (^)(void))completeBlock {
-    self.onSuccessBlock = completeBlock;
-}
-
-- (void)execute {
-    [self checkUdid];
+    return code;
 }
 
 @end
