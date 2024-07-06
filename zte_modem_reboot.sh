@@ -1,7 +1,7 @@
 #!/bin/bash
 
 MODEM_IP="192.168.0.1"
-PASSWORD="admin"
+PASSWORD="YWRtaW4%3D"
 
 LOGIN_RESPONSE=$(curl -s --header "Referer: http://$MODEM_IP/index.html" -d "isTest=false&goformId=LOGIN&password=$PASSWORD" http://$MODEM_IP/goform/goform_set_cmd_process)
 
