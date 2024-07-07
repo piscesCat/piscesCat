@@ -116,8 +116,13 @@ if (loginToModem($modem_ip, $password)) {
     }
 
     $sms_list = fetchSmsListFromModem($modem_ip);
-    echo "SMS List from modem: \n";
-    print_r($sms_list);
+    $del_sms = array();
+    foreach($sms_list['messages'] as $sms) {
+        if ($sms['number'] === '1414')) {
+            $del_sms[] = $sms['id'];
+        }
+    }
+    print_r($del_sms);
 } else {
     echo "Login Failed";
 }
