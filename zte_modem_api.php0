@@ -119,10 +119,9 @@ function deleteSmsFromModem($modem_ip, $msg_ids) {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Content-Type: multipart/form-data',
         'Referer: ' . $referer
     ));
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
 
     $response = curl_exec($ch);
     if(curl_errno($ch)) {
@@ -131,7 +130,7 @@ function deleteSmsFromModem($modem_ip, $msg_ids) {
     curl_close($ch);
 
     $decoded_response = json_decode($response, true);
-    print_r($decoded_response);print_r($data);
+    print_r($decoded_response);
     if ($decoded_response && isset($decoded_response['result']) && $decoded_response['result'] === 'success') {
         return true;
     } else {
