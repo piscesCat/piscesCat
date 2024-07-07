@@ -131,6 +131,7 @@ function deleteSmsFromModem($modem_ip, $msg_ids) {
     curl_close($ch);
 
     $decoded_response = json_decode($response, true);
+    print_r($decoded_response);
     if ($decoded_response && isset($decoded_response['result']) && $decoded_response['result'] === 'success') {
         return true;
     } else {
@@ -161,10 +162,10 @@ if (loginToModem($modem_ip, $password)) {
         }
     }
     if(deleteSmsFromModem($modem_ip, $del_sms_ids)) {
-        echo 'SMS was deleted';
+        echo "SMS was deleted\n";
     } else {
-        echo 'Delete SMS failed';
+        echo "Delete SMS failed\n";
     }
 } else {
-    echo "Login Failed";
+    echo "Login Failed\n";
 }
