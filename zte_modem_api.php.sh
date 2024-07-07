@@ -100,6 +100,44 @@ function sendSmsFromModem($modem_ip, $phone_number, $message) {
     return false;
 }
 
+function deleteSmsFromModem($modem_ip, $msg_ids) {
+    $url = "http://$modem_ip/goform/goform_set_cmd_process";
+    $referer = "http://$modem_ip/index.html";
+
+    $msg_id_string = implode(';', $msg_ids);
+
+    $data = array(
+        'isTest' => 'false',
+        'goformId' => 'DELETE_SMS',
+        'msg_id' => $msg_id_string,
+        'notCallback' => 'true'
+    );
+
+    $ch = curl_init();
+
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: multipart/form-data',
+        'Referer: ' . $referer
+    ));
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+    $response = curl_exec($ch);
+    if(curl_errno($ch)) {
+        echo 'Error: ' . curl_error($ch);
+    }
+    curl_close($ch);
+
+    $decoded_response = json_decode($response, true);
+    if ($decoded_response && isset($decoded_response['result']) && $decoded_response['result'] === 'success') {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 $modem_ip = "192.168.0.1";
 $password = "admin";
 
@@ -110,19 +148,23 @@ if (loginToModem($modem_ip, $password)) {
     $message = "ACTIVE NETWORK";
     $send_result = sendSmsFromModem($modem_ip, $phone_number, $message);
     if ($send_result) {
-        echo "SMS sent.\n";
+        echo "SMS sent\n";
     } else {
-        echo "Send SMS failed.\n";
+        echo "Send SMS failed\n";
     }
 
     $sms_list = fetchSmsListFromModem($modem_ip);
-    $del_sms = array();
+    $del_sms_ids = array();
     foreach($sms_list['messages'] as $sms) {
         if ($sms['number'] === '1414') {
-            $del_sms[] = $sms['id'];
+            $del_sms_ids[] = $sms['id'];
         }
     }
-    print_r($del_sms);
+    if(deleteSmsFromModem($modem_ip, $del_sms_ids)) {
+        echo 'SMS was deleted';
+    } else {
+        echo 'Delete SMS failed';
+    }
 } else {
     echo "Login Failed";
 }
