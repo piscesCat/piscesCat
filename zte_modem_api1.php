@@ -8,7 +8,7 @@ function decode_from_hex($hex_string) {
     return mb_convert_encoding(hex2bin($hex_string), 'UTF-8', 'UTF-16BE');
 }
 
-function loginToModem($modem_ip, $base64_encoded_password) {
+function loginToModem($modem_ip, $password) {
     $login_url = "http://$modem_ip/goform/goform_set_cmd_process";
     $referer = "http://$modem_ip/index.html";
     $post_fields = [
