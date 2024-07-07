@@ -131,7 +131,7 @@ function deleteSmsFromModem($modem_ip, $msg_ids) {
     curl_close($ch);
 
     $decoded_response = json_decode($response, true);
-    print_r($decoded_response);
+    print_r($decoded_response);print_r($data);
     if ($decoded_response && isset($decoded_response['result']) && $decoded_response['result'] === 'success') {
         return true;
     } else {
