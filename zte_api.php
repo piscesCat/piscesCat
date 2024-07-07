@@ -1,9 +1,5 @@
 #!/usr/bin/env php-cli
 <?php
-function base64_url_encode($input) {
-    return str_replace('=', '', strtr(base64_encode($input), '+/', '-_'));
-}
-
 function encode_to_hex($input_string) {
     return bin2hex(mb_convert_encoding($input_string, 'UTF-16BE'));
 }
@@ -18,7 +14,7 @@ function loginToModem($modem_ip, $base64_encoded_password) {
     $post_fields = [
         'isTest' => 'false',
         'goformId' => 'LOGIN',
-        'password' => $base64_encoded_password
+        'password' => base64_encode($password)
     ];
 
     $ch = curl_init();
@@ -65,9 +61,9 @@ function fetchSmsListFromModem($modem_ip) {
 }
 
 $modem_ip = "192.168.0.1";
-$base64_encoded_password = base64_url_encode("admin");
+$password = "admin";
 
-if (loginToModem($modem_ip, $base64_encoded_password)) {
+if (loginToModem($modem_ip, $password)) {
     echo "Login OK\n";
 
     $sms_list = fetchSmsListFromModem($modem_ip);
