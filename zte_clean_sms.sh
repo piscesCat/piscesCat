@@ -119,6 +119,7 @@ if (loginToModem($modem_ip, $password)) {
     echo "Login OK\n";
 
     $sms_list = fetchSmsListFromModem($modem_ip);
+    print_r($sms_list);
     $del_sms_ids = array();
     foreach($sms_list['messages'] as $sms) {
         $del_sms_ids[] = $sms['id'];
