@@ -8,10 +8,13 @@ LOGIN_RESPONSE=$(curl -s --header "Referer: http://$MODEM_IP/index.html" -d "isT
 if [[ $LOGIN_RESPONSE == *'"result":"0"'* ]]; then
     echo "Login OK"
     
-    NETWORK_PROVIDER_RESPONSE=$(curl -s -H "Referer: http://$MODEM_IP/index.html" "http://$MODEM_IP/goform/goform_get_cmd_process?isTest=false&cmd=network_provider")
+    RESPONSE=$(curl -s -H "Referer: http://$MODEM_IP/index.html" "http://$MODEM_IP/goform/goform_get_cmd_process?isTest=false&cmd=Device_Connected_Time,msisdn")
     
-    if [[ $NETWORK_PROVIDER_RESPONSE != *'"network_provider":""'* ]]; then
-        echo "Network provider is not empty. Rebooting..."
+    DEVICE_CONNECTED_TIME=$(echo $RESPONSE | grep -o '"Device_Connected_Time":"[0-9]*"' | grep -o '[0-9]*')
+    MSISDN=$(echo $RESPONSE | grep -o '"msisdn":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+
+    if [[ $DEVICE_CONNECTED_TIME -ge 120 && $MSISDN != "" ]]; then
+        echo "Rebooting..."
         
         REBOOT_RESPONSE=$(curl -s "http://$MODEM_IP/goform/goform_set_cmd_process" \
         -X POST \
@@ -24,7 +27,7 @@ if [[ $LOGIN_RESPONSE == *'"result":"0"'* ]]; then
             echo "Reboot FAILED"
         fi
     else
-        echo "Network provider is empty. No reboot needed."
+        echo "No reboot needed."
     fi
 else
     echo "Login FAILED"
