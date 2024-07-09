@@ -78,16 +78,14 @@ function sendSmsFromModem($modem_ip, $phone_number, $message) {
     $headers = ["Referer: http://$modem_ip/index.html"];
     
     $encoded_message = encode_to_hex($message);
-    $encoded_phone_number = urlencode($phone_number);
     $current_datetime = date("d;m;y;H;i;s;O");
-    $encoded_date = urlencode($current_datetime);
     
     $payload = [
         "isTest" => "false",
         "goformId" => "SEND_SMS",
         "notCallback" => "true",
-        "Number" => $encoded_phone_number,
-        "sms_time" => $encoded_date,
+        "Number" => $phone_number,
+        "sms_time" => $current_datetime,
         "MessageBody" => $encoded_message,
         "ID" => "-1",
         "encode_type" => "GSM7_default"
