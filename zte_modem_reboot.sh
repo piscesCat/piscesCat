@@ -8,7 +8,7 @@ LOGIN_RESPONSE=$(curl -s --header "Referer: http://$MODEM_IP/index.html" -d "isT
 if [[ $LOGIN_RESPONSE == *'"result":"0"'* ]]; then
     RESPONSE=$(curl -s -H "Referer: http://$MODEM_IP/index.html" "http://$MODEM_IP/goform/goform_get_cmd_process?isTest=false&cmd=Device_Connected_Time,msisdn")
     
-    DEVICE_CONNECTED_TIME=$(echo $RESPONSE | grep -o '"Device_Connected_Time":"[0-9]*"' | grep -o '[0-9]*')
+    DEVICE_CONNECTED_TIME=$(echo $RESPONSE | grep -o '"Device_Connected_Time":"[^"]*"' | cut -d':' -f2 | tr -d '"')
     MSISDN=$(echo $RESPONSE | grep -o '"msisdn":"[^"]*"' | cut -d':' -f2 | tr -d '"')
 
     echo "Device_Connected_Time: $DEVICE_CONNECTED_TIME"
@@ -21,7 +21,7 @@ if [[ $LOGIN_RESPONSE == *'"result":"0"'* ]]; then
         -d "isTest=false&goformId=REBOOT_DEVICE")
         
         if [[ $REBOOT_RESPONSE == *'"result":"success"'* ]]; then
-            echo "Rebooting..."
+            echo "Reboot OK"
         else
             echo "Reboot FAILED"
         fi
