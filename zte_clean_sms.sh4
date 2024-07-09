@@ -55,7 +55,6 @@ function fetchSmsListFromModem($modem_ip) {
         return null;
     }
 
-    // Remove control characters
     $get_response = preg_replace('/[\x00-\x1F\x80-\x9F]/u', '', $get_response);
 
     $decoded_response = json_decode($get_response, true);
