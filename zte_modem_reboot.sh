@@ -71,9 +71,28 @@ if ($login_response !== false) {
 }
 
 function curl_post($url, $data) {
-    global $MODEM_IP; // Khai báo biến $MODEM_IP là global
+    global $MODEM_IP;
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch,
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+    curl_setopt($ch, CURLOPT_REFERER, "http://$MODEM_IP/index.html");
+    $response = curl_exec($ch);
+    curl_close($ch);
+    return $response;
+}
+
+function curl_get($url, $data) {
+    global $MODEM_IP;
+    $url = $url . '?' . http_build_query($data);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_REFERER, "http://$MODEM_IP/index.html");
+    $response = curl_exec($ch);
+    curl_close($ch);
+    return $response;
+}
+
+?>
