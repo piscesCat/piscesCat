@@ -1,5 +1,7 @@
 #!/usr/bin/env php-cli
 <?php
+ini_set('memory_limit', '256M');
+
 function encode_to_hex($input_string) {
     return bin2hex(mb_convert_encoding($input_string, 'UTF-16BE'));
 }
@@ -35,7 +37,7 @@ function loginToModem($modem_ip, $password) {
 }
 
 function fetchSmsListFromModem($modem_ip) {
-    $get_url = "http://$modem_ip/goform/goform_get_cmd_process?isTest=false&cmd=sms_data_total&page=0&data_per_page=100&mem_store=1&tags=10&order_by=order+by+id+asc";
+    $get_url = "http://$modem_ip/goform/goform_get_cmd_process?isTest=false&cmd=sms_data_total&page=0&data_per_page=20&mem_store=1&tags=10&order_by=order+by+id+asc";
     $referer = "http://$modem_ip/index.html";
 
     $ch = curl_init();
@@ -48,8 +50,18 @@ function fetchSmsListFromModem($modem_ip) {
     $get_response = curl_exec($ch);
     curl_close($ch);
 
+    if ($get_response === false) {
+        echo 'CURL error: ' . curl_error($ch);
+        return null;
+    }
+
     $decoded_response = json_decode($get_response, true);
-print_r($decoded_response);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        echo 'JSON decode error: ' . json_last_error_msg();
+        return null;
+    }
+
     if (isset($decoded_response['messages'])) {
         foreach ($decoded_response['messages'] as &$message) {
             $encoded_content = $message['content'];
