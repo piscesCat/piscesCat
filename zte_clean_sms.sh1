@@ -48,16 +48,15 @@ function fetchSmsListFromModem($modem_ip) {
     $get_response = curl_exec($ch);
     curl_close($ch);
 
-    var_dump($get_response);
-
     $decoded_response = json_decode($get_response, true);
     if (isset($decoded_response['messages'])) {
         foreach ($decoded_response['messages'] as &$message) {
             $encoded_content = $message['content'];
             $decoded_content = decode_from_hex($encoded_content);
-            $message['decoded_content'] = $decoded_content;
+            $message['content'] = $decoded_content;
         }
     }
+    print_r($decoded_response);
 
     return $decoded_response;
 }
