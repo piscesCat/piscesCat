@@ -48,12 +48,25 @@ function fetchSmsListFromModem($modem_ip) {
     $get_response = curl_exec($ch);
     curl_close($ch);
 
+    if ($get_response === false) {
+        echo 'CURL error: ' . curl_error($ch);
+        return null;
+    }
+
+    $get_response = preg_replace('/[\x00-\x1F\x80-\x9F]/u', '', $get_response);
+
     $decoded_response = json_decode($get_response, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        echo 'JSON decode error: ' . json_last_error_msg();
+        return null;
+    }
+
     if (isset($decoded_response['messages'])) {
         foreach ($decoded_response['messages'] as &$message) {
             $encoded_content = $message['content'];
             $decoded_content = decode_from_hex($encoded_content);
-            $message['decoded_content'] = $decoded_content;
+            $message['content'] = $decoded_content;
         }
     }
 
