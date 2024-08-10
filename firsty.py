@@ -1,3 +1,7 @@
+# Script by Khải Phan
+# Shared on discord @kenhtaymay
+# Dont remove this line. Không xoá dòng này để tôn trọng tác giả.
+
 import requests
 
 url = "https://backoffice.firsty.app/api/mobile/subscriptions/v2/i7Jzwq9Gx7PPaDEYmdFHxYMLocJ3/iccid/893107062434917784/free"
