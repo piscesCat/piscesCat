@@ -30,9 +30,7 @@
                     <key>LocalIdentifier</key>
                     <string>o-gn4tmysx1rq8dbwt46@ookla</string>
                     <key>AuthenticationMethod</key>
-                    <string>None</string>
-                    <key>SharedSecret</key>
-                    <string>eey1v9jc1x06qf645kczafqajqncn2q0</string>
+                    <string>EAP</string>
                     <key>AuthName</key>
                     <string>o-gn4tmysx1rq8dbwt46@ookla</string>
                     <key>AuthPassword</key>
