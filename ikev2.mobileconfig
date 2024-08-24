@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>IKEv2</key>
+            <dict>
+                <key>RemoteAddress</key>
+                <string>pnq-c02.wlvpn.com</string>
+                <key>RemoteIdentifier</key>
+                <string>vpn.wlvpn.com</string>
+                <key>LocalIdentifier</key>
+                <string>o-gn4tmysx1rq8dbwt46@ookla</string>
+                <key>AuthenticationMethod</key>
+                <string>None</string>
+                <key>SharedSecret</key>
+                <string>eey1v9jc1x06qf645kczafqajqncn2q0</string>
+                <key>AuthName</key>
+                <string>o-gn4tmysx1rq8dbwt46@ookla</string>
+                <key>AuthPassword</key>
+                <string>eey1v9jc1x06qf645kczafqajqncn2q0</string>
+            </dict>
+            <key>PayloadDescription</key>
+            <string>Configures VPN settings</string>
+            <key>PayloadDisplayName</key>
+            <string>Virtual, IN #5</string>
+            <key>PayloadIdentifier</key>
+            <string>com.wlvpn.vpn</string>
+            <key>PayloadOrganization</key>
+            <string>Organization Name</string>
+            <key>PayloadType</key>
+            <string>com.apple.vpn.managed</string>
+            <key>PayloadUUID</key>
+            <string>UUID</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>VPNType</key>
+            <string>IKEv2</string>
+        </dict>
+    </array>
+    <key>PayloadDisplayName</key>
+    <string>VPN Configuration</string>
+    <key>PayloadIdentifier</key>
+    <string>com.wlvpn.vpn.config</string>
+    <key>PayloadOrganization</key>
+    <string>Organization Name</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>UUID</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>
