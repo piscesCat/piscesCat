@@ -12,7 +12,7 @@
             <key>PayloadIdentifier</key>
             <string>com.example.ikev2</string>
             <key>PayloadUUID</key>
-            <string>12345678-1234-1234-1234-1234567890ab</string> <!-- Replace with a unique UUID -->
+            <string>00000000-0000-0000-0000-000000000000</string> <!-- Replace with a unique UUID -->
             <key>PayloadDisplayName</key>
             <string>Simple IKEv2 VPN</string>
             <key>VPNType</key>
@@ -24,11 +24,14 @@
                 <key>RemoteIdentifier</key>
                 <string>vpn.wlvpn.com</string>
                 <key>AuthenticationMethod</key>
-                <string>Password</string> <!-- Adjust this based on actual authentication method -->
+                <string>Password</string>
                 <key>AuthName</key>
                 <string>o-gn4tmysx1rq8dbwt46@ookla</string>
                 <key>AuthPassword</key>
                 <string>eey1v9jc1x06qf645kczafqajqncn2q0</string>
+                <!-- If you don't use certificates, ensure this key is either removed or set properly -->
+                <!-- <key>ServerCertificateIssuerCommonName</key>
+                <string>Your-Server-Cert-Issuer-Common-Name</string> -->
             </dict>
             <key>UserDefinedName</key>
             <string>Dallas, US #69</string>
@@ -41,7 +44,7 @@
     <key>PayloadType</key>
     <string>Configuration</string>
     <key>PayloadUUID</key>
-    <string>abcdef12-3456-7890-abcd-ef1234567890</string> <!-- Replace with a unique UUID -->
+    <string>11111111-1111-1111-1111-111111111111</string> <!-- Replace with a unique UUID -->
     <key>PayloadVersion</key>
     <integer>1</integer>
 </dict>
