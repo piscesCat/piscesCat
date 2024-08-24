@@ -29,9 +29,6 @@
                 <string>o-gn4tmysx1rq8dbwt46@ookla</string>
                 <key>AuthPassword</key>
                 <string>eey1v9jc1x06qf645kczafqajqncn2q0</string>
-                <!-- If you don't use certificates, ensure this key is either removed or set properly -->
-                <!-- <key>ServerCertificateIssuerCommonName</key>
-                <string>Your-Server-Cert-Issuer-Common-Name</string> -->
             </dict>
             <key>UserDefinedName</key>
             <string>Dallas, US #69</string>
