@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadType</key>
+    <string>com.apple.vpn.config</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadUUID</key>
+    <string>E621E1F8-C36C-495A-93A6-00F25E75A237</string> <key>PayloadIdentifier</key>
+    <string>com.yourcompany.vpn</string>
+    <key>PayloadDisplayName</key>
+    <string>Dallas, US #69</string>
+    <key>VPNConfig</key>
+    <dict>
+        <key>OnDemand</key>
+        <false/>
+        <key>MatchAllNetworks</key>
+        <false/>
+        <key>ProxySettings</key>
+        <dict/>
+        <key>UUID</key>
+        <string>E621E1F8-C36C-495A-93A6-00F25E75A237</string> <key>Type</key>
+        <string>IKEv2</string>
+        <key>Server</key>
+        <string>dal-b27.wlvpn.com</string>
+        <key>RemoteID</key>
+        <string>vpn.wlvpn.com</string>
+        <key>AuthenticationMethod</key>
+        <string>Username</string>
+        <key>Username</key>
+        <string>o-gn4tmysx1rq8dbwt46@ookla</string>
+        <key>Password</key>
+        <string>eey1v9jc1x06qf645kczafqajqncn2q0</string>
+        </dict>
+</dict>
+</plist>
