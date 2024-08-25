@@ -16,7 +16,9 @@
                 <key>RemoteIdentifier</key>
                 <string>vpn.wlvpn.com</string>
                 <key>AuthenticationMethod</key>
-                <string>None</string>
+                <string>Certificate</string>
+                <key>CertificateUUID</key>
+                <string>7f3d6e12-7a0c-4f3d-a2f7-9a6e5d77f0ea</string>
                 <key>ChildSecurityAssociationParameters</key>
                 <dict>
                     <key>DiffieHellmanGroup</key>
@@ -59,29 +61,29 @@
                 <integer>1</integer>
             </dict>
             <key>PayloadDescription</key>
-            <string>Configures VPN settings for Osaka, JP #3</string>
+            <string>Configures VPN settings</string>
             <key>PayloadDisplayName</key>
-            <string>Osaka, JP #3</string>
+            <string>VPN</string>
             <key>PayloadIdentifier</key>
-            <string>com.apple.vpn.managed.58363f1c-00ae-4691-9bc0-cb32d6f56522</string>
+            <string>com.apple.vpn.managed.96C1C38F-D4D6-472E-BA90-9117ED8896B5</string>
             <key>PayloadType</key>
             <string>com.apple.vpn.managed</string>
             <key>PayloadUUID</key>
-            <string>58363f1c-00ae-4691-9bc0-cb32d6f56522</string>
+            <string>96C1C38F-D4D6-472E-BA90-9117ED8896B5</string>
             <key>PayloadVersion</key>
             <integer>1</integer>
             <key>UserDefinedName</key>
-            <string>Osaka, JP #3</string>
+            <string>London VPN</string>
             <key>VPNType</key>
             <string>IKEv2</string>
         </dict>
     </array>
     <key>PayloadDisplayName</key>
-    <string>Osaka, JP #3 VPN Profile</string>
+    <string>My Super IKEv2 VPN</string>
     <key>PayloadIdentifier</key>
-    <string>com.example.vpnprofile.ac60bc84-8be2-4ff8-9be2-a249cf779b99</string>
+    <string>com.zhovner.tunnel</string>
     <key>PayloadUUID</key>
-    <string>ac60bc84-8be2-4ff8-9be2-a249cf779b99</string>
+    <string>F3FAD91C-019C-4A79-87A1-CF334C583339</string>
     <key>PayloadType</key>
     <string>Configuration</string>
     <key>PayloadVersion</key>
