@@ -199,43 +199,12 @@ fi
 log "Firewall rules applied successfully"
 log "Starting sing-box with config: $CONFIG_FILE"
 ENABLE_DEPRECATED_SPECIAL_OUTBOUNDS=true "$SINGBOX_BIN" run -c "$CONFIG_FILE"
-
-log "Firewall rules bổ sung đang được thiết lập."
-ip rule del fwmark 1 table 100 2>/dev/null
-ip route del local default dev lo table 100 2>/dev/null
-
-ip rule add fwmark 1 table 100 2>/dev/null
-ip route add local default dev lo table 100 2>/dev/null
-
-for chain in PREROUTING; do
-    iptables -t mangle -D $chain -d 0.0.0.0/8 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -d 10.0.0.0/8 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -d 127.0.0.0/8 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -d 172.16.0.0/12 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -d 192.168.0.0/16 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -d 224.0.0.0/4 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -p tcp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
-    iptables -t mangle -D $chain -p udp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
-    iptables -t nat -D $chain -p udp --dport 53 -j REDIRECT --to-ports 1053 2>/dev/null
-done
-
-iptables -t mangle -A PREROUTING -d 0.0.0.0/8 -j RETURN
-iptables -t mangle -A PREROUTING -d 10.0.0.0/8 -j RETURN
-iptables -t mangle -A PREROUTING -d 127.0.0.0/8 -j RETURN
-iptables -t mangle -A PREROUTING -d 172.16.0.0/12 -j RETURN
-iptables -t mangle -A PREROUTING -d 192.168.0.0/16 -j RETURN
-iptables -t mangle -A PREROUTING -d 224.0.0.0/4 -j RETURN
-
-iptables -t nat -A PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 1053
-iptables -t nat -A PREROUTING -p tcp --dport 53 -j REDIRECT --to-ports 1053
-
-iptables -t mangle -A PREROUTING -p tcp -j TPROXY --on-port 9888 --tproxy-mark 1
-iptables -t mangle -A PREROUTING -p udp -j TPROXY --on-port 9888 --tproxy-mark 1
-
+sleep 5
+log "Firewall rules phải được bổ sung trong /etc/firewall.user"
 log "Thiết lập xong, khởi động lại firewall."
 /etc/init.d/firewall restart
 sleep 2
-log "SING-BOX ĐÃ ĐƯỢC KHỞI ĐỘNG THÀNH CÔNG."
+log "SING-BOX ĐÃ ĐƯỢC KHỞI ĐỘNG HOÀN TẤT."
 EOF;
 
 function createStartScript($configFile) {
