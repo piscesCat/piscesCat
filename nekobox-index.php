@@ -199,12 +199,6 @@ fi
 log "Firewall rules applied successfully"
 log "Starting sing-box with config: $CONFIG_FILE"
 ENABLE_DEPRECATED_SPECIAL_OUTBOUNDS=true "$SINGBOX_BIN" run -c "$CONFIG_FILE"
-sleep 5
-log "Firewall rules phải được bổ sung trong /etc/firewall.user"
-log "Thiết lập xong, khởi động lại firewall."
-/etc/init.d/firewall restart
-sleep 2
-log "SING-BOX ĐÃ ĐƯỢC KHỞI ĐỘNG HOÀN TẤT."
 EOF;
 
 function createStartScript($configFile) {
@@ -405,6 +399,7 @@ if (isset($_POST['singbox'])) {
                 $pid = getSingboxPID();
                 if ($pid) {
                     writeToLog("Sing-box started successfully. PID: $pid");
+					shell_exec("/etc/init.d/firewall restart");
                     $needRefresh = true;
                 } else {
                     writeToLog("Failed to start Sing-box");
