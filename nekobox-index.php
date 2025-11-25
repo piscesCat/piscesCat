@@ -28,6 +28,7 @@ CONFIG_FILE="%s"
 SINGBOX_BIN="%s"
 FIREWALL_LOG="%s"
 
+# --- Bước 1: Chuẩn bị thư mục và tệp nhật ký ---
 mkdir -p "$(dirname "$SINGBOX_LOG")"
 mkdir -p "$(dirname "$FIREWALL_LOG")"
 touch "$SINGBOX_LOG"
@@ -35,130 +36,241 @@ touch "$FIREWALL_LOG"
 chmod 644 "$SINGBOX_LOG"
 chmod 644 "$FIREWALL_LOG"
 
+# Chuyển hướng đầu ra tiêu chuẩn và lỗi của tập lệnh sang nhật ký Sing-box
 exec >> "$SINGBOX_LOG" 2>&1
 
+# Hàm ghi nhật ký tường lửa
 log() {
     echo "[$(date)] $1" >> "$FIREWALL_LOG"
 }
 
 log "Khởi động Sing-box với cấu hình: $CONFIG_FILE"
 
-log "Xóa và thiết lập lại các luật định tuyến IP cho TPROXY..."
-
-ip rule del fwmark 1 table 100 2>/dev/null
-ip route del local default dev lo table 100 2>/dev/null
-ip rule add fwmark 1 table 100 2>/dev/null
-ip route add local default dev lo table 100 2>/dev/null
-
-log "Khởi động lại dịch vụ tường lửa..."
+# --- Bước 2: Khởi động lại Tường lửa ---
+log "Đang khởi động lại tường lửa..."
 /etc/init.d/firewall restart
 sleep 2
+
+# --- Bước 3: Cấu hình Quy tắc TPROXY và MARK dựa trên FW4 (nftables) hoặc FW3 (iptables) ---
 
 if command -v fw4 > /dev/null; then
     log "Đã phát hiện FW4. Bắt đầu cấu hình nftables."
 
-    nft flush table ip mangle 2>/dev/null
-    nft flush table ip6 mangle 2>/dev/null
+    nft flush ruleset
+    
+    # Định nghĩa các quy tắc NFTables
+    nft -f - <<'NFTABLES'
+flush ruleset
 
-    nft add table ip mangle 2>/dev/null
-    nft add table ip6 mangle 2>/dev/null
+table inet singbox {
+  # Tập hợp (set) địa chỉ IPv4 cục bộ/đặc biệt cần loại trừ
+  set local_ipv4 {
+    type ipv4_addr
+    flags interval
+    elements = {
+      10.0.0.0/8,
+      127.0.0.0/8,
+      169.254.0.0/16,
+      172.16.0.0/12,
+      192.168.0.0/16,
+      240.0.0.0/4
+    }
+  }
 
-    nft 'add chain ip mangle prerouting { type filter hook prerouting priority mangle; }'
-    nft 'add chain ip mangle output { type filter hook output priority mangle; }'
-    nft 'add chain ip6 mangle prerouting { type filter hook prerouting priority mangle; }'
-    nft 'add chain ip6 mangle output { type filter hook output priority mangle; }'
+  # Tập hợp (set) địa chỉ IPv6 cục bộ/đặc biệt cần loại trừ
+  set local_ipv6 {
+    type ipv6_addr
+    flags interval
+    elements = {
+      ::ffff:0.0.0.0/96,
+      64:ff9b::/96,
+      100::/64,
+      2001::/32,
+      2001:10::/28,
+      2001:20::/28,
+      2001:db8::/32,
+      2002::/16,
+      fc00::/7,
+      fe80::/10
+    }
+  }
 
-    log "Thêm luật loại trừ địa chỉ IPv4 riêng tư."
-    nft add rule ip mangle prerouting ip daddr 0.0.0.0/8 return
-    nft add rule ip mangle prerouting ip daddr 10.0.0.0/8 return
-    nft add rule ip mangle prerouting ip daddr 127.0.0.0/8 return
-    nft add rule ip mangle prerouting ip daddr 172.16.0.0/12 return
-    nft add rule ip mangle prerouting ip daddr 192.168.0.0/16 return
-    nft add rule ip mangle prerouting ip daddr 224.0.0.0/4 return
+  # Chuỗi loại trừ chung (các gói tin không được TPROXY/MARK)
+  chain common-exclude {
+    fib daddr type { unspec, local, anycast, multicast } return
+    meta nfproto ipv4 ip daddr @local_ipv4 return
+    meta nfproto ipv6 ip6 daddr @local_ipv6 return
+    udp dport { 123 } return # Loại trừ NTP
+  }
 
-    log "Thêm luật chuyển hướng DNS IPv4 tới cổng 1053."
-    nft add rule ip mangle prerouting udp dport 53 redirect to :1053
-    nft add rule ip mangle prerouting tcp dport 53 redirect to :1053
+  # Chuỗi TPROXY: chuyển hướng tới cổng 9888 và đánh dấu (mark) 1
+  chain singbox-tproxy {
+    goto common-exclude
+    meta l4proto { tcp, udp } meta mark set 1 tproxy to :9888 accept
+  }
 
-    log "Thêm luật TPROXY IPv4 tới cổng 9888 (đánh dấu 1)."
-    nft add rule ip mangle prerouting tcp meta mark set 1 tproxy to :9888
-    nft add rule ip mangle prerouting udp meta mark set 1 tproxy to :9888
+  # Chuỗi MARK: chỉ đánh dấu gói tin là 1 (dành cho OUTPUT)
+  chain singbox-mark {
+    goto common-exclude
+    meta l4proto { tcp, udp } meta mark set 1
+  }
 
-    log "Thêm luật loại trừ địa chỉ IPv6 riêng tư."
-    nft add rule ip6 mangle prerouting ip6 daddr ::1/128 return
-    nft add rule ip6 mangle prerouting ip6 daddr fc00::/7 return
-    nft add rule ip6 mangle prerouting ip6 daddr fe80::/10 return
-    nft add rule ip6 mangle prerouting ip6 daddr ff00::/8 return
+  # Hook OUTPUT cho các ứng dụng cục bộ
+  chain mangle-output {
+    type route hook output priority mangle; policy accept;
+    # Đánh dấu các kết nối mới (trừ Sing-box, giả sử GID của nó là 1)
+    meta l4proto { tcp, udp } ct state new skgid != 1 goto singbox-mark
+  }
 
-    log "Thêm luật chuyển hướng DNS IPv6 tới cổng 1053."
-    nft add rule ip6 mangle prerouting udp dport 53 redirect to :1053
-    nft add rule ip6 mangle prerouting tcp dport 53 redirect to :1053
-
-    log "Thêm luật TPROXY IPv6 tới cổng 9888 (đánh dấu 1)."
-    nft add rule ip6 mangle prerouting tcp meta mark set 1 tproxy to :9888
-    nft add rule ip6 mangle prerouting udp meta mark set 1 tproxy to :9888
+  # Hook PREROUTING cho lưu lượng từ các giao diện (interface) khác (mạng LAN/Wi-Fi)
+  chain mangle-prerouting {
+    type filter hook prerouting priority mangle; policy accept;
+    iifname { eth0, wlan0 } meta l4proto { tcp, udp } ct state new goto singbox-tproxy
+  }
+}
+NFTABLES
 
 elif command -v fw3 > /dev/null; then
     log "Đã phát hiện FW3. Bắt đầu cấu hình iptables."
 
-    for chain in PREROUTING; do
-        iptables -t mangle -D $chain -d 0.0.0.0/8 -j RETURN 2>/dev/null
-        iptables -t mangle -D $chain -d 10.0.0.0/8 -j RETURN 2>/dev/null
-        iptables -t mangle -D $chain -d 127.0.0.0/8 -j RETURN 2>/dev/null
-        iptables -t mangle -D $chain -d 172.16.0.0/12 -j RETURN 2>/dev/null
-        iptables -t mangle -D $chain -d 192.168.0.0/16 -j RETURN 2>/dev/null
-        iptables -t mangle -D $chain -p tcp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
-        iptables -t mangle -D $chain -p udp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
-        iptables -t nat -D $chain -p udp --dport 53 -j REDIRECT --to-ports 1053 2>/dev/null
-        iptables -t nat -D $chain -p tcp --dport 53 -j REDIRECT --to-ports 1053 2>/dev/null
-        
-        ip6tables -t mangle -D $chain -d ::1/128 -j RETURN 2>/dev/null
-        ip6tables -t mangle -D $chain -d fc00::/7 -j RETURN 2>/dev/null
-        ip6tables -t mangle -D $chain -d fe80::/10 -j RETURN 2>/dev/null
-        ip6tables -t mangle -D $chain -d ff00::/8 -j RETURN 2>/dev/null
-        ip6tables -t mangle -D $chain -p tcp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
-        ip6tables -t mangle -D $chain -p udp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
-        ip6tables -t nat -D $chain -p udp --dport 53 -j REDIRECT --to-ports 1053 2>/dev/null
-        ip6tables -t nat -D $chain -p tcp --dport 53 -j REDIRECT --to-ports 1053 2>/dev/null
-    done
+    # Xóa và tạo lại các chuỗi/quy tắc iptables/ip6tables cũ
+    iptables -t mangle -F
+    iptables -t mangle -X
+    ip6tables -t mangle -F
+    ip6tables -t mangle -X
 
-    log "Thêm luật loại trừ địa chỉ IPv4 riêng tư."
-    iptables -t mangle -A PREROUTING -d 0.0.0.0/8 -j RETURN
-    iptables -t mangle -A PREROUTING -d 10.0.0.0/8 -j RETURN
-    iptables -t mangle -A PREROUTING -d 127.0.0.0/8 -j RETURN
-    iptables -t mangle -A PREROUTING -d 172.16.0.0/12 -j RETURN
-    iptables -t mangle -A PREROUTING -d 192.168.0.0/16 -j RETURN
-    iptables -t mangle -A PREROUTING -d 224.0.0.0/4 -j RETURN
+    # Thiết lập chuỗi singbox-mark (IPv4)
+    iptables -t mangle -N singbox-mark
+    iptables -t mangle -A singbox-mark -m addrtype --dst-type UNSPEC,LOCAL,ANYCAST,MULTICAST -j RETURN
+    iptables -t mangle -A singbox-mark -d 10.0.0.0/8 -j RETURN
+    iptables -t mangle -A singbox-mark -d 127.0.0.0/8 -j RETURN
+    iptables -t mangle -A singbox-mark -d 169.254.0.0/16 -j RETURN
+    iptables -t mangle -A singbox-mark -d 172.16.0.0/12 -j RETURN
+    iptables -t mangle -A singbox-mark -d 192.168.0.0/16 -j RETURN
+    iptables -t mangle -A singbox-mark -d 240.0.0.0/4 -j RETURN
+    iptables -t mangle -A singbox-mark -p udp --dport 123 -j RETURN
+    iptables -t mangle -A singbox-mark -j MARK --set-mark 1
 
-    log "Thêm luật chuyển hướng DNS IPv4 tới cổng 1053."
-    iptables -t nat -A PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 1053
-    iptables -t nat -A PREROUTING -p tcp --dport 53 -j REDIRECT --to-ports 1053
+    # Thiết lập chuỗi singbox-tproxy (IPv4)
+    iptables -t mangle -N singbox-tproxy
+    iptables -t mangle -A singbox-tproxy -m addrtype --dst-type UNSPEC,LOCAL,ANYCAST,MULTICAST -j RETURN
+    iptables -t mangle -A singbox-tproxy -d 10.0.0.0/8 -j RETURN
+    iptables -t mangle -A singbox-tproxy -d 127.0.0.0/8 -j RETURN
+    iptables -t mangle -A singbox-tproxy -d 169.254.0.0/16 -j RETURN
+    iptables -t mangle -A singbox-tproxy -d 172.16.0.0/12 -j RETURN
+    iptables -t mangle -A singbox-tproxy -d 192.168.0.0/16 -j RETURN
+    iptables -t mangle -A singbox-tproxy -d 240.0.0.0/4 -j RETURN
+    iptables -t mangle -A singbox-tproxy -p udp --dport 123 -j RETURN
+    iptables -t mangle -A singbox-tproxy -p tcp -j TPROXY --tproxy-mark 0x1/0x1 --on-port 9888
+    iptables -t mangle -A singbox-tproxy -p udp -j TPROXY --tproxy-mark 0x1/0x1 --on-port 9888
 
-    log "Thêm luật TPROXY IPv4 tới cổng 9888 (đánh dấu 1)."
-    iptables -t mangle -A PREROUTING -p tcp -j TPROXY --on-port 9888 --tproxy-mark 1
-    iptables -t mangle -A PREROUTING -p udp -j TPROXY --on-port 9888 --tproxy-mark 1
-    
-    log "Thêm luật loại trừ địa chỉ IPv6 riêng tư."
-    ip6tables -t mangle -A PREROUTING -d ::1/128 -j RETURN
-    ip6tables -t mangle -A PREROUTING -d fc00::/7 -j RETURN
-    ip6tables -t mangle -A PREROUTING -d fe80::/10 -j RETURN
-    ip6tables -t mangle -A PREROUTING -d ff00::/8 -j RETURN
+    # Áp dụng các quy tắc IPv4 cho OUTPUT và PREROUTING
+    iptables -t mangle -A OUTPUT -p tcp -m cgroup ! --cgroup 1 -j singbox-mark
+    iptables -t mangle -A OUTPUT -p udp -m cgroup ! --cgroup 1 -j singbox-mark
+    iptables -t mangle -A PREROUTING -i eth0 -p tcp -j singbox-tproxy
+    iptables -t mangle -A PREROUTING -i eth0 -p udp -j singbox-tproxy
+    iptables -t mangle -A PREROUTING -i wlan0 -p tcp -j singbox-tproxy
+    iptables -t mangle -A PREROUTING -i wlan0 -p udp -j singbox-tproxy
 
-    log "Thêm luật chuyển hướng DNS IPv6 tới cổng 1053."
-    ip6tables -t nat -A PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 1053
-    ip6tables -t nat -A PREROUTING -p tcp --dport 53 -j REDIRECT --to-ports 1053
+    # Thiết lập chuỗi singbox-mark (IPv6)
+    ip6tables -t mangle -N singbox-mark
+    ip6tables -t mangle -A singbox-mark -m addrtype --dst-type UNSPEC,LOCAL,ANYCAST,MULTICAST -j RETURN
+    ip6tables -t mangle -A singbox-mark -d ::ffff:0.0.0.0/96 -j RETURN
+    ip6tables -t mangle -A singbox-mark -d 64:ff9b::/96 -j RETURN
+    ip6tables -t mangle -A singbox-mark -d 100::/64 -j RETURN
+    ip6tables -t mangle -A singbox-mark -d 2001::/32 -j RETURN
+    ip6tables -t mangle -A singbox-mark -d 2001:10::/28 -j RETURN
+    ip6tables -t mangle -A singbox-mark -d 2001:20::/28 -j RETURN
+    ip6tables -t mangle -A singbox-mark -d 2001:db8::/32 -j RETURN
+    ip6tables -t mangle -A singbox-mark -d 2002::/16 -j RETURN
+    ip6tables -t mangle -A singbox-mark -d fc00::/7 -j RETURN
+    ip6tables -t mangle -A singbox-mark -d fe80::/10 -j RETURN
+    ip6tables -t mangle -A singbox-mark -p udp --dport 123 -j RETURN
+    ip6tables -t mangle -A singbox-mark -j MARK --set-mark 1
 
-    log "Thêm luật TPROXY IPv6 tới cổng 9888 (đánh dấu 1)."
-    ip6tables -t mangle -A PREROUTING -p tcp -j TPROXY --on-port 9888 --tproxy-mark 1
-    ip6tables -t mangle -A PREROUTING -p udp -j TPROXY --on-port 9888 --tproxy-mark 1
+    # Thiết lập chuỗi singbox-tproxy (IPv6)
+    ip6tables -t mangle -N singbox-tproxy
+    ip6tables -t mangle -A singbox-tproxy -m addrtype --dst-type UNSPEC,LOCAL,ANYCAST,MULTICAST -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -d ::ffff:0.0.0.0/96 -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -d 64:ff9b::/96 -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -d 100::/64 -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -d 2001::/32 -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -d 2001:10::/28 -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -d 2001:20::/28 -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -d 2001:db8::/32 -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -d 2002::/16 -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -d fc00::/7 -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -d fe80::/10 -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -p udp --dport 123 -j RETURN
+    ip6tables -t mangle -A singbox-tproxy -p tcp -j TPROXY --tproxy-mark 0x1/0x1 --on-port 9888
+    ip6tables -t mangle -A singbox-tproxy -p udp -j TPROXY --tproxy-mark 0x1/0x1 --on-port 9888
+
+    # Áp dụng các quy tắc IPv6 cho OUTPUT và PREROUTING
+    ip6tables -t mangle -A OUTPUT -p tcp -m cgroup ! --cgroup 1 -j singbox-mark
+    ip6tables -t mangle -A OUTPUT -p udp -m cgroup ! --cgroup 1 -j singbox-mark
+    ip6tables -t mangle -A PREROUTING -i lo -p tcp -j singbox-tproxy # Bao gồm lo cho IPv6
+    ip6tables -t mangle -A PREROUTING -i lo -p udp -j singbox-tproxy
+    ip6tables -t mangle -A PREROUTING -i eth0 -p tcp -j singbox-tproxy
+    ip6tables -t mangle -A PREROUTING -i eth0 -p udp -j singbox-tproxy
 
 else
-    log "Không phát hiện fw3 hoặc fw4, không thể cấu hình các luật tường lửa."
+    log "Không phát hiện FW3 hoặc FW4, không thể cấu hình quy tắc tường lửa ban đầu."
     exit 1
 fi
 
-log "Các luật tường lửa đã được áp dụng thành công."
+log "Đã áp dụng thành công các quy tắc tường lửa ban đầu."
+
+# --- Bước 4: Thiết lập Quy tắc Định tuyến (Routing) cho TPROXY (Mark 1 -> Table 100) ---
+# Quy tắc này cần thiết cho TPROXY hoạt động.
+ip rule del fwmark 1 table 100 2>/dev/null
+ip route del local default dev lo table 100 2>/dev/null
+
+ip rule add fwmark 1 table 100 2>/dev/null
+ip route add local default dev lo table 100 2>/dev/null
+
+log "Đã thiết lập quy tắc định tuyến TPROXY (mark 1 -> table 100)."
+
+# --- Bước 5: Thêm Quy tắc TPROXY và REDIRECT DNS (iptables, cho cả IPv4/IPv6 nếu cần) ---
+# Đoạn này được lấy từ script thứ hai và áp dụng các quy tắc TPROXY và REDIRECT DNS bổ sung.
+
+# Xóa các quy tắc cũ khỏi chuỗi PREROUTING để tránh trùng lặp
+for chain in PREROUTING; do
+    # Quy tắc loại trừ đích cũ (tùy chọn)
+    iptables -t mangle -D $chain -d 0.0.0.0/8 -j RETURN 2>/dev/null
+    iptables -t mangle -D $chain -d 10.0.0.0/8 -j RETURN 2>/dev/null
+    iptables -t mangle -D $chain -d 127.0.0.0/8 -j RETURN 2>/dev/null
+    iptables -t mangle -D $chain -d 172.16.0.0/12 -j RETURN 2>/dev/null
+    iptables -t mangle -D $chain -d 192.168.0.0/16 -j RETURN 2>/dev/null
+    iptables -t mangle -D $chain -d 224.0.0.0/4 -j RETURN 2>/dev/null
+    # Quy tắc TPROXY cũ
+    iptables -t mangle -D $chain -p tcp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
+    iptables -t mangle -D $chain -p udp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
+    # Quy tắc REDIRECT DNS cũ
+    iptables -t nat -D $chain -p udp --dport 53 -j REDIRECT --to-ports 1053 2>/dev/null
+    iptables -t nat -D $chain -p tcp --dport 53 -j REDIRECT --to-ports 1053 2>/dev/null # Bổ sung TCP DNS
+done
+
+# Thêm quy tắc loại trừ địa chỉ đặc biệt/cục bộ (IPv4) vào PREROUTING/mangle
+iptables -t mangle -A PREROUTING -d 0.0.0.0/8 -j RETURN
+iptables -t mangle -A PREROUTING -d 10.0.0.0/8 -j RETURN
+iptables -t mangle -A PREROUTING -d 127.0.0.0/8 -j RETURN
+iptables -t mangle -A PREROUTING -d 172.16.0.0/12 -j RETURN
+iptables -t mangle -A PREROUTING -d 192.168.0.0/16 -j RETURN
+iptables -t mangle -A PREROUTING -d 224.0.0.0/4 -j RETURN
+
+# Chuyển hướng lưu lượng DNS (cổng 53) sang cổng 1053 của Sing-box (table nat)
+iptables -t nat -A PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 1053
+iptables -t nat -A PREROUTING -p tcp --dport 53 -j REDIRECT --to-ports 1053
+
+# Áp dụng TPROXY cho tất cả lưu lượng TCP/UDP còn lại (table mangle)
+iptables -t mangle -A PREROUTING -p tcp -j TPROXY --on-port 9888 --tproxy-mark 1
+iptables -t mangle -A PREROUTING -p udp -j TPROXY --on-port 9888 --tproxy-mark 1
+
+log "Đã áp dụng các quy tắc REDIRECT/TPROXY cuối cùng."
+
+# --- Bước 6: Chạy Sing-box ---
 log "Khởi động sing-box với cấu hình: $CONFIG_FILE"
+# ENABLE_DEPRECATED_SPECIAL_OUTBOUNDS là biến môi trường cho sing-box
 ENABLE_DEPRECATED_SPECIAL_OUTBOUNDS=true "$SINGBOX_BIN" run -c "$CONFIG_FILE"
 EOF;
 
