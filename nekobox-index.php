@@ -399,6 +399,7 @@ if (isset($_POST['singbox'])) {
                 $pid = getSingboxPID();
                 if ($pid) {
                     writeToLog("Sing-box started successfully. PID: $pid");
+					writeToLog("Đang khởi động lại Firewall");
 					shell_exec("/etc/init.d/firewall restart");
                     $needRefresh = true;
                 } else {
@@ -460,6 +461,8 @@ if (isset($_POST['singbox'])) {
                 $new_pid = getSingboxPID();
                 if ($new_pid) {
                     writeToLog("Sing-box restarted successfully. New PID: $new_pid");
+					writeToLog("Đang khởi động lại Firewall");
+					shell_exec("/etc/init.d/firewall restart");
                     $needRefresh = true;
                 } else {
                     writeToLog("Failed to restart Sing-box");
