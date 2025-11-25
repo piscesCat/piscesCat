@@ -28,13 +28,6 @@ CONFIG_FILE="%s"
 SINGBOX_BIN="%s"
 FIREWALL_LOG="%s"
 
-# --- Hàm ghi log Việt hóa ---
-log() {
-    # Sử dụng >> để ghi vào file, thay vì chỉ echo ra màn hình
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$FIREWALL_LOG"
-}
-
-# --- 1. Thiết lập thư mục và file log ---
 mkdir -p "$(dirname "$SINGBOX_LOG")"
 mkdir -p "$(dirname "$FIREWALL_LOG")"
 touch "$SINGBOX_LOG"
@@ -42,40 +35,21 @@ touch "$FIREWALL_LOG"
 chmod 644 "$SINGBOX_LOG"
 chmod 644 "$FIREWALL_LOG"
 
-# Chuyển hướng output của script sang log file của Sing-box
 exec >> "$SINGBOX_LOG" 2>&1
 
-log "Bắt đầu thiết lập Sing-box và các quy tắc tường lửa TPROXY."
-log "File cấu hình Sing-box: $CONFIG_FILE"
+log() {
+    echo "[$(date)] $1" >> "$FIREWALL_LOG"
+}
 
-# --- 2. Xóa các quy tắc định tuyến và tường lửa cũ (từ script2) ---
-log "Xóa quy tắc định tuyến (routing) và các quy tắc iptables PREROUTING cũ để tránh xung đột."
+log "Starting Sing-box with config: $CONFIG_FILE"
 
-# Xóa quy tắc định tuyến
-ip rule del fwmark 1 table 100 2>/dev/null
-ip route del local default dev lo table 100 2>/dev/null
-
-# Xóa các quy tắc cũ khỏi iptables (PREROUTING/mangle/nat)
-for chain in PREROUTING; do
-    iptables -t mangle -D $chain -d 0.0.0.0/8 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -d 10.0.0.0/8 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -d 127.0.0.0/8 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -d 172.16.0.0/12 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -d 192.168.0.0/16 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -d 224.0.0.0/4 -j RETURN 2>/dev/null
-    iptables -t mangle -D $chain -p tcp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
-    iptables -t mangle -D $chain -p udp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
-    iptables -t nat -D $chain -p udp --dport 53 -j REDIRECT --to-ports 1053 2>/dev/null
-    iptables -t nat -D $chain -p tcp --dport 53 -j REDIRECT --to-ports 1053 2>/dev/null
-done
-
-# --- 3. Áp dụng quy tắc tường lửa (từ script1) ---
-log "Áp dụng các quy tắc tường lửa chính (từ script1: FW4/nftables hoặc FW3/iptables)."
+log "Restarting firewall..."
+/etc/init.d/firewall restart
+sleep 2
 
 if command -v fw4 > /dev/null; then
-    log "Phát hiện FW4. Đang áp dụng quy tắc nftables."
+    log "FW4 Detected. Starting nftables."
 
-    # Xóa toàn bộ ruleset hiện tại và thiết lập lại
     nft flush ruleset
     
     nft -f - <<'NFTABLES'
@@ -140,20 +114,15 @@ table inet singbox {
   }
 }
 NFTABLES
-    
-elif command -v fw3 > /dev/null; then
-    log "Phát hiện FW3. Đang áp dụng quy tắc iptables."
 
-    # Xóa quy tắc iptables cũ
+elif command -v fw3 > /dev/null; then
+    log "FW3 Detected. Starting iptables."
+
     iptables -t mangle -F
     iptables -t mangle -X
     ip6tables -t mangle -F
     ip6tables -t mangle -X
 
-    # Thiết lập quy tắc iptables/ip6tables (giữ nguyên logic từ script1)
-    # [Giữ nguyên toàn bộ khối iptables/ip6tables từ script1]
-
-    # IPv4
     iptables -t mangle -N singbox-mark
     iptables -t mangle -A singbox-mark -m addrtype --dst-type UNSPEC,LOCAL,ANYCAST,MULTICAST -j RETURN
     iptables -t mangle -A singbox-mark -d 10.0.0.0/8 -j RETURN
@@ -184,7 +153,6 @@ elif command -v fw3 > /dev/null; then
     iptables -t mangle -A PREROUTING -i wlan0 -p tcp -j singbox-tproxy
     iptables -t mangle -A PREROUTING -i wlan0 -p udp -j singbox-tproxy
 
-    # IPv6
     ip6tables -t mangle -N singbox-mark
     ip6tables -t mangle -A singbox-mark -m addrtype --dst-type UNSPEC,LOCAL,ANYCAST,MULTICAST -j RETURN
     ip6tables -t mangle -A singbox-mark -d ::ffff:0.0.0.0/96 -j RETURN
@@ -224,29 +192,33 @@ elif command -v fw3 > /dev/null; then
     ip6tables -t mangle -A PREROUTING -i eth0 -p udp -j singbox-tproxy
 
 else
-    log "LỖI: Không phát hiện fw3 hay fw4, không thể cấu hình quy tắc tường lửa."
+    log "Neither fw3 nor fw4 detected, unable to configure firewall rules."
     exit 1
 fi
 
-log "Các quy tắc tường lửa chính đã được áp dụng."
+log "Firewall rules applied successfully"
+log "Starting sing-box with config: $CONFIG_FILE"
+ENABLE_DEPRECATED_SPECIAL_OUTBOUNDS=true "$SINGBOX_BIN" run -c "$CONFIG_FILE"
 
-# --- 4. Khởi động Sing-box đầu tiên ---
-log "Khởi động Sing-box ở chế độ nền..."
-# Chạy Sing-box ở chế độ nền (&) để script có thể tiếp tục
-ENABLE_DEPRECATED_SPECIAL_OUTBOUNDS=true "$SINGBOX_BIN" run -c "$CONFIG_FILE" &
-SINGBOX_PID=$!
-log "Sing-box đã được khởi động với PID: $SINGBOX_PID. Đợi 1 giây..."
-sleep 1 
+log "Firewall rules bổ sung đang được thiết lập."
+ip rule del fwmark 1 table 100 2>/dev/null
+ip route del local default dev lo table 100 2>/dev/null
 
-# --- 5. Thiết lập định tuyến và quy tắc tường lửa bổ sung (từ script2) ---
-log "Áp dụng quy tắc định tuyến (routing) và quy tắc tường lửa bổ sung (từ script2)."
-
-# Thiết lập định tuyến (routing)
 ip rule add fwmark 1 table 100 2>/dev/null
 ip route add local default dev lo table 100 2>/dev/null
-log "Đã thiết lập quy tắc định tuyến fwmark 1 tới table 100."
 
-# Thêm quy tắc loại trừ địa chỉ IP cục bộ/đặc biệt vào chain PREROUTING của mangle
+for chain in PREROUTING; do
+    iptables -t mangle -D $chain -d 0.0.0.0/8 -j RETURN 2>/dev/null
+    iptables -t mangle -D $chain -d 10.0.0.0/8 -j RETURN 2>/dev/null
+    iptables -t mangle -D $chain -d 127.0.0.0/8 -j RETURN 2>/dev/null
+    iptables -t mangle -D $chain -d 172.16.0.0/12 -j RETURN 2>/dev/null
+    iptables -t mangle -D $chain -d 192.168.0.0/16 -j RETURN 2>/dev/null
+    iptables -t mangle -D $chain -d 224.0.0.0/4 -j RETURN 2>/dev/null
+    iptables -t mangle -D $chain -p tcp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
+    iptables -t mangle -D $chain -p udp -j TPROXY --on-port 9888 --tproxy-mark 1 2>/dev/null
+    iptables -t nat -D $chain -p udp --dport 53 -j REDIRECT --to-ports 1053 2>/dev/null
+done
+
 iptables -t mangle -A PREROUTING -d 0.0.0.0/8 -j RETURN
 iptables -t mangle -A PREROUTING -d 10.0.0.0/8 -j RETURN
 iptables -t mangle -A PREROUTING -d 127.0.0.0/8 -j RETURN
@@ -254,22 +226,16 @@ iptables -t mangle -A PREROUTING -d 172.16.0.0/12 -j RETURN
 iptables -t mangle -A PREROUTING -d 192.168.0.0/16 -j RETURN
 iptables -t mangle -A PREROUTING -d 224.0.0.0/4 -j RETURN
 
-# Chuyển hướng DNS (Cổng 53) sang cổng 1053 (dùng iptables nat)
 iptables -t nat -A PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 1053
 iptables -t nat -A PREROUTING -p tcp --dport 53 -j REDIRECT --to-ports 1053
-log "Đã thêm quy tắc chuyển hướng DNS sang cổng 1053."
 
-# Áp dụng TPROXY cho tất cả lưu lượng đi qua PREROUTING
 iptables -t mangle -A PREROUTING -p tcp -j TPROXY --on-port 9888 --tproxy-mark 1
 iptables -t mangle -A PREROUTING -p udp -j TPROXY --on-port 9888 --tproxy-mark 1
-log "Đã thêm quy tắc TPROXY cho PREROUTING."
 
-# --- 6. Khởi động lại Firewall lần cuối ---
-log "Khởi động lại tường lửa (firewall) lần cuối để áp dụng đầy đủ các thay đổi."
+log "Thiết lập xong, khởi động lại firewall."
 /etc/init.d/firewall restart
-sleep 5 # Tăng thời gian đợi để đảm bảo firewall đã khởi động hoàn toàn.
-
-log "Quá trình thiết lập Sing-box đã hoàn tất."
+sleep 2
+log "SING-BOX ĐÃ ĐƯỢC KHỞI ĐỘNG THÀNH CÔNG."
 EOF;
 
 function createStartScript($configFile) {
