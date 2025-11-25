@@ -199,6 +199,7 @@ fi
 log "Firewall rules applied successfully"
 log "Starting sing-box with config: $CONFIG_FILE"
 ENABLE_DEPRECATED_SPECIAL_OUTBOUNDS=true "$SINGBOX_BIN" run -c "$CONFIG_FILE"
+/etc/init.d/firewall restart
 EOF;
 
 function createStartScript($configFile) {
