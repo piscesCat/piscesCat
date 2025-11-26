@@ -399,7 +399,8 @@ if (isset($_POST['singbox'])) {
                 $pid = getSingboxPID();
                 if ($pid) {
                     writeToLog("Sing-box started successfully. PID: $pid");
-					include './auto-restart-firewall.php';
+					include './sb-firewall.php';
+					start_fw();
                     $needRefresh = true;
                 } else {
                     writeToLog("Failed to start Sing-box");
@@ -430,6 +431,8 @@ if (isset($_POST['singbox'])) {
                 writeToLog("Cleared firewall rules and restarted firewall");
                 if (!isSingboxRunning()) {
                     writeToLog("Sing-box stopped successfully");
+					include './sb-firewall.php';
+					disable_fw();
                     $needRefresh = true;
                 }
             } else {
@@ -460,7 +463,8 @@ if (isset($_POST['singbox'])) {
                 $new_pid = getSingboxPID();
                 if ($new_pid) {
                     writeToLog("Sing-box restarted successfully. New PID: $new_pid");
-					include './auto-restart-firewall.php';
+					include './sb-firewall.php';
+					start_fw();
                     $needRefresh = true;
                 } else {
                     writeToLog("Failed to restart Sing-box");
