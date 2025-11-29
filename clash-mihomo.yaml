@@ -6,37 +6,37 @@ ipv6: false
 
 proxy-providers:
   my-proxies:
-    type: http
-    url: https://russia-vpn.vercel.app/sub/mihomo
+    type: "http"
+    url: "https://russia-vpn.vercel.app/sub/mihomo"
     interval: 3600
     filter: ".*"
     health-check:
       enable: true
       interval: 600
-      url: http://www.gstatic.com/generate_204
+      url: "http://www.gstatic.com/generate_204"
 
 proxy-groups:
-  - name: PROXY-TEST
-    type: url-test
-    url: http://www.gstatic.com/generate_204
+  - name: "PROXY-TEST"
+    type: "url-test"
+    url: "http://www.gstatic.com/generate_204"
     interval: 300
     use:
       - my-proxies
 
-  - name: PROXY
-    type: fallback
+  - name: "PROXY"
+    type: "fallback"
     proxies:
       - PROXY-TEST
       - DIRECT
 
-  - name: DIRECT
-    type: select
+  - name: "DIRECT"
+    type: "select"
     proxies:
       - DIRECT
 
 rules:
-  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
-  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
-  - MATCH,PROXY
+  - "IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
+  - "IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
+  - "IP-CIDR,10.0.0.0/8,DIRECT,no-resolve"
+  - "IP-CIDR,172.16.0.0/12,DIRECT,no-resolve"
+  - "MATCH,PROXY"
