@@ -29,11 +29,6 @@ proxy-groups:
       - PROXY-TEST
       - DIRECT
 
-  - name: "DIRECT"
-    type: "select"
-    proxies:
-      - DIRECT
-
 rules:
   - "IP-CIDR,127.0.0.0/8,DIRECT,no-resolve"
   - "IP-CIDR,192.168.0.0/16,DIRECT,no-resolve"
