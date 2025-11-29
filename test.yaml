@@ -13,7 +13,7 @@ allow-lan: false
 mode: rule
 ipv6: false
 log-level: info
-external-controller: 0.0.0.0:9090
+external-controller: 0.0.0.0:9093
 dns:
   enable: true
   listen: 0.0.0.0:53
